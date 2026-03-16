@@ -17,20 +17,16 @@ use fondo::Fondos;
 
 #[macroquad::main("Zoo Pixel")]
 async fn main() {
-    // --- Fuente ---
-    let font = load_ttf_font_from_bytes(include_bytes!("../assets/fonts/Perfect DOS VGA 437.ttf"))
+    let font = load_ttf_font_from_bytes(include_bytes!("../assets/fonts/Ithaca-LVB75.ttf"))
         .expect("No se pudo cargar la fuente");
 
-    // --- Base de datos ---
     let zoo_db = ZooDB::new();
 
-    // --- Fondos ---
     let fondos = Fondos::new(
         include_bytes!("../assets/fondos/spritesheet_zonas.png"),
         10,
     );
 
-    // --- Audio ---
     let mut audio = AudioManager::new();
 
     audio.agregar_ambiente(Escena::Entrada,      include_bytes!("../assets/audio/ambiente/amb_entrada.ogg")).await;
@@ -67,7 +63,7 @@ async fn main() {
             audio.iniciar_ambiente(estado.escena);
         }
 
-        let area_h = screen_height() - config::BAR_HEIGHT;
+        let area_h = screen_height() - config::bar_height();
 
         // === 1. FONDO ===
         if fondos.tiene(&estado.escena) {
@@ -85,23 +81,23 @@ async fn main() {
         // === 4. VISTA ANIMAL ===
         ui::dibujar_animal(&estado, &font);
 
-        // === MODO FOTO ===
+        // === 5. MODO FOTO ===
         ui::dibujar_foto(&estado, &font);
 
-        // === 5. TRANSICIÓN ===
+        // === 6. TRANSICIÓN ===
         ui::dibujar_transicion(&estado);
 
-        // === 6. BARRA ===
+        // === 7. BARRA ===
         ui::dibujar_barra(&estado, es_android, &font);
 
-        // === 7. INPUT ===
+        // === 8. INPUT ===
         let mut acciones = input::leer_teclado();
         if es_android {
             let botones = ui::Botones::calcular();
             acciones.extend(ui::dibujar_controles(&estado, &botones, &font));
         }
 
-        // === 8. PROCESAR ===
+        // === 9. PROCESAR ===
         let en_transicion_antes_input = estado.en_transicion();
 
         for accion in acciones {
