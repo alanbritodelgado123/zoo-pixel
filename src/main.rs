@@ -1,114 +1,131 @@
+// src/main.rs
+use macroquad::prelude::*;
+
+mod animacion;
 mod audio;
+mod ciclo_dia;
 mod config;
 mod db;
 mod escena;
 mod estado;
+mod eventos;
 mod fondo;
+mod guia;
 mod input;
+mod libreta;
+mod minijuego;
+mod plataforma;
+mod save;
 mod ui;
-
-use macroquad::prelude::*;
 
 use audio::AudioManager;
 use db::ZooDB;
-use escena::Escena;
 use estado::Estado;
-use fondo::Fondos;
+use ui::UiRenderer;
 
-#[macroquad::main("Zoo Pixel")]
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Zoológico Nacional".to_owned(),
+        window_width: 480,
+        window_height: 800,
+        window_resizable: true,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf)]
 async fn main() {
-    let font = load_ttf_font_from_bytes(include_bytes!("../assets/fonts/Ithaca-LVB75.ttf"))
-        .expect("No se pudo cargar la fuente");
+    let db = ZooDB::new();
 
-    let zoo_db = ZooDB::new();
-
-    let fondos = Fondos::new(
-        include_bytes!("../assets/fondos/spritesheet_zonas.png"),
-        10,
-    );
+    let font_bytes = include_bytes!("../assets/fonts/PressStart2P.ttf");
+    let font = load_ttf_font_from_bytes(font_bytes).expect("No se pudo cargar la fuente");
 
     let mut audio = AudioManager::new();
-
-    audio.agregar_ambiente(Escena::Entrada,      include_bytes!("../assets/audio/ambiente/amb_entrada.ogg")).await;
-    audio.agregar_ambiente(Escena::Sabana,       include_bytes!("../assets/audio/ambiente/amb_leones.ogg")).await;
-    audio.agregar_ambiente(Escena::Aviario,      include_bytes!("../assets/audio/ambiente/amb_aves.ogg")).await;
-    audio.agregar_ambiente(Escena::Reptiliario,  include_bytes!("../assets/audio/ambiente/amb_reptiles.ogg")).await;
-    audio.agregar_ambiente(Escena::Laguna,       include_bytes!("../assets/audio/ambiente/amb_acuario.ogg")).await;
-    audio.agregar_ambiente(Escena::Primates,     include_bytes!("../assets/audio/ambiente/amb_primates.ogg")).await;
-
+    audio.set_fallback(include_bytes!("../assets/audio/extra/Seaside-ambiance-with-seagulls-and-boats.ogg")).await;
     audio.agregar_efecto("transicion", include_bytes!("../assets/audio/efectos/fx_transicion.wav")).await;
-    audio.agregar_efecto("boton",      include_bytes!("../assets/audio/efectos/fx_boton.wav")).await;
+    audio.agregar_efecto("boton", include_bytes!("../assets/audio/efectos/fx_boton.wav")).await;
 
-    let dur_transicion = {
-        let dur = audio.duracion_efecto("transicion");
-        if dur > config::TRANSITION_MIN { dur }
-        else { config::TRANSITION_SECS_FALLBACK }
-    };
+    audio.agregar_ambiente(escena::Escena::EntradaPrincipal, include_bytes!("../assets/audio/ambiente/amb_entrada.ogg")).await;
+    audio.agregar_ambiente(escena::Escena::Acuario, include_bytes!("../assets/audio/ambiente/amb_acuario.ogg")).await;
+    audio.agregar_ambiente(escena::Escena::Aviario, include_bytes!("../assets/audio/ambiente/amb_aves.ogg")).await;
+    audio.agregar_ambiente(escena::Escena::A2, include_bytes!("../assets/audio/ambiente/amb_leones.ogg")).await;
+    audio.agregar_ambiente(escena::Escena::B1, include_bytes!("../assets/audio/ambiente/amb_primates.ogg")).await;
+    audio.agregar_ambiente(escena::Escena::A3, include_bytes!("../assets/audio/ambiente/amb_reptiles.ogg")).await;
 
     let mut estado = Estado::new();
-    estado.duracion_transicion = dur_transicion;
+    estado.duracion_transicion = audio.duracion_transicion().max(config::TRANSITION_MIN);
 
-    audio.iniciar_ambiente(Escena::Entrada);
+    let ui = UiRenderer::new(font);
 
-    let es_android = cfg!(target_os = "android");
+    audio.iniciar_ambiente(estado.escena);
+
+    let mut escena_anterior = estado.escena;
 
     loop {
-        let dt = get_frame_time();
-        clear_background(config::COLOR_BG_DARK);
+        let dt = get_frame_time().min(0.1);
 
-        let en_transicion_antes = estado.en_transicion();
+        // Input - usar la función del módulo
+        for accion in input::leer_teclado() {
+            estado.procesar_accion(accion, &db);
+        }
+
         estado.update(dt);
+        audio.update(dt);
 
-        if en_transicion_antes && !estado.en_transicion() {
-            audio.iniciar_ambiente(estado.escena);
+        audio.set_volumen_musica(estado.save.config.volumen_musica);
+        audio.set_volumen_efectos(estado.save.config.volumen_efectos);
+
+        if estado.escena != escena_anterior {
+            audio.transicionar_a(estado.escena);
+            escena_anterior = estado.escena;
         }
 
-        let area_h = screen_height() - config::bar_height();
+        ui.render(&estado);
 
-        // === 1. FONDO ===
-        if fondos.tiene(&estado.escena) {
-            fondos.draw(&estado.escena, WHITE, area_h);
-        } else {
-            ui::dibujar_placeholder(&estado.escena, area_h, &font);
-        }
-
-        // === 2. MINIMAPA ===
-        ui::dibujar_minimapa(&estado, &font);
-
-        // === 3. SELECCIÓN ===
-        ui::dibujar_seleccion(&estado, &font);
-
-        // === 4. VISTA ANIMAL ===
-        ui::dibujar_animal(&estado, &font);
-
-        // === 5. MODO FOTO ===
-        ui::dibujar_foto(&estado, &font);
-
-        // === 6. TRANSICIÓN ===
-        ui::dibujar_transicion(&estado);
-
-        // === 7. BARRA ===
-        ui::dibujar_barra(&estado, es_android, &font);
-
-        // === 8. INPUT ===
-        let mut acciones = input::leer_teclado();
-        if es_android {
-            let botones = ui::Botones::calcular();
-            acciones.extend(ui::dibujar_controles(&estado, &botones, &font));
-        }
-
-        // === 9. PROCESAR ===
-        let en_transicion_antes_input = estado.en_transicion();
-
-        for accion in acciones {
-            estado.procesar_accion(accion, &zoo_db);
-        }
-
-        if !en_transicion_antes_input && estado.en_transicion() {
-            audio.parar_ambiente();
-            audio.efecto("transicion");
+        if !cfg!(target_os = "android") {
+            render_pc_overlay(&estado, &ui.font);
         }
 
         next_frame().await;
+    }
+}
+
+fn render_pc_overlay(estado: &Estado, font: &Font) {
+    let s = config::scale();
+    let sw = screen_width();
+    let sh = screen_height();
+
+    let fs = config::fs_indicador();
+    let margin = 8.0 * s;
+    let y = sh - margin;
+    let gap = 15.0 * s;
+
+    let indicators: &[(&str, &str, f32)] = &[
+        ("Z", "Acción", estado.indicador_z_pressed),
+        ("X", "Atrás", estado.indicador_x_pressed),
+        ("M", "Mapa", 0.0),
+        ("L", "Libreta", 0.0),
+    ];
+
+    let total_w: f32 = indicators.iter().map(|(k, _, _)| {
+        measure_text(&format!("[{}]", k), Some(font), fs, 1.0).width + gap
+    }).sum::<f32>() - gap;
+
+    let mut x = (sw - total_w) / 2.0;
+
+    for (key, _label, pressed) in indicators {
+        let texto = format!("[{}]", key);
+        let tw = measure_text(&texto, Some(font), fs, 1.0).width;
+
+        let alpha = if *pressed > 0.0 { 0.6 + pressed * 0.4 } else { 0.4 };
+        let color = if *pressed > 0.0 { config::COLOR_ACCENT } else {
+            Color::new(0.7, 0.7, 0.7, alpha)
+        };
+
+        draw_text_ex(&texto, x, y, TextParams {
+            font: Some(font), font_size: fs, color, ..Default::default()
+        });
+
+        x += tw + gap;
     }
 }
