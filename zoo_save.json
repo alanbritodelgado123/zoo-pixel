@@ -1,0 +1,45 @@
+{
+  "escena": "A1",
+  "visitadas": [
+    "C1",
+    "Acuario",
+    "B3",
+    "AreaCentral",
+    "Aviario",
+    "A3",
+    "D3",
+    "D1",
+    "B2",
+    "Museo",
+    "B1",
+    "EntradaPrincipal",
+    "B5",
+    "C2",
+    "A2",
+    "C3",
+    "D2",
+    "B4",
+    "A1",
+    "EntradaSecundaria",
+    "D4"
+  ],
+  "libreta": [],
+  "animales_vistos": [
+    "Colibrí Coliazul",
+    "Flamenco del Caribe",
+    "Gallito de las Rocas",
+    "Chigüire",
+    "Anaconda Verde",
+    "Tucán Piapoco",
+    "Puma",
+    "Jaguar",
+    "Guacamaya Bandera",
+    "Caimán del Orinoco"
+  ],
+  "eventos_vistos": [],
+  "config": {
+    "volumen_musica": 0.6,
+    "volumen_efectos": 0.8,
+    "idioma": "es"
+  }
+}
