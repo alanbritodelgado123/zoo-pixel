@@ -1,3 +1,4 @@
+// src/audio.rs
 use std::collections::HashMap;
 use macroquad::audio::*;
 use crate::escena::Escena;
@@ -22,6 +23,9 @@ pub struct AudioManager {
     transicion_timer: f32,
     transicion_duracion: f32,
     fade_speed: f32,
+    // Para sonido de animal
+    animal_sound: Option<Sound>,
+    animal_playing: bool,
 }
 
 impl AudioManager {
@@ -39,6 +43,8 @@ impl AudioManager {
             transicion_timer: 0.0,
             transicion_duracion: 0.0,
             fade_speed: 5.0,
+            animal_sound: None,
+            animal_playing: false,
         }
     }
 
@@ -67,24 +73,20 @@ impl AudioManager {
         self.duraciones.get(nombre).copied().unwrap_or(0.0)
     }
 
-    /// Duración que debe tener la transición visual (basada en el audio)
     pub fn duracion_transicion(&self) -> f32 {
         let dur = self.duracion_efecto("transicion");
         if dur > 0.1 { dur } else { 0.5 }
     }
 
-    #[allow(dead_code)]
     pub fn set_volumen_musica(&mut self, vol: f32) {
         self.volumen_musica = vol;
     }
 
-    #[allow(dead_code)]
     pub fn set_volumen_efectos(&mut self, vol: f32) {
         self.volumen_efectos = vol;
     }
 
     pub fn update(&mut self, dt: f32) {
-        // Extraer el estado actual para evitar problemas de borrow
         let accion = match &mut self.estado {
             EstadoAudio::FadeOut { vol_actual } => {
                 *vol_actual -= self.fade_speed * dt;
@@ -106,7 +108,6 @@ impl AudioManager {
             _ => None,
         };
 
-        // Ejecutar la acción fuera del match
         if let Some(accion) = accion {
             match accion {
                 AccionAudio::TerminarFade => {
@@ -143,9 +144,7 @@ impl AudioManager {
                 self.estado = EstadoAudio::EsperandoTransicion;
                 self.transicion_timer = 0.0;
             }
-            _ => {
-                // Ya en transición, solo actualizamos destino
-            }
+            _ => {}
         }
     }
 
@@ -199,7 +198,6 @@ impl AudioManager {
         }
     }
 
-    #[allow(dead_code)]
     pub fn efecto(&self, nombre: &str) {
         if let Some(sound) = self.efectos.get(nombre) {
             play_sound(sound, PlaySoundParams {
@@ -209,7 +207,31 @@ impl AudioManager {
         }
     }
 
-    #[allow(dead_code)]
+    /// Reproduce sonido del animal (usa efecto transicion como placeholder)
+    pub fn reproducir_animal(&mut self) {
+        if self.animal_playing { return; }
+        if let Some(sound) = self.efectos.get("transicion") {
+            play_sound(sound, PlaySoundParams {
+                looped: false,
+                volume: self.volumen_efectos,
+            });
+            self.animal_sound = Some(sound.clone());
+            self.animal_playing = true;
+        }
+    }
+
+    /// Detiene el sonido del animal con fade corto
+    pub fn parar_animal(&mut self) {
+        if let Some(ref sound) = self.animal_sound {
+            stop_sound(sound);
+        }
+        self.animal_playing = false;
+    }
+
+    pub fn animal_sonando(&self) -> bool {
+        self.animal_playing
+    }
+
     pub fn en_transicion(&self) -> bool {
         matches!(self.estado, EstadoAudio::FadeOut { .. } | EstadoAudio::EsperandoTransicion)
     }

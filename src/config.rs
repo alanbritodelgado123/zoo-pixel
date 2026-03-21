@@ -5,15 +5,11 @@ pub const TRANSITION_SECS_FALLBACK: f32 = 0.5;
 pub const TRANSITION_MIN: f32 = 0.3;
 pub const BTN_RATIO: f32 = 0.14;
 pub const BTN_PAD: f32 = 15.0;
-pub const BAR_HEIGHT_RATIO: f32 = 0.07;
+pub const BAR_HEIGHT_RATIO: f32 = 0.06;
 pub const TYPEWRITER_CPS: f32 = 35.0;
 pub const MAPA_COLS: usize = 6;
 pub const MAPA_ROWS: usize = 6;
 pub const CICLO_DIA_SECS: f32 = 300.0;
-
-// =====================================================================
-//  PALETA
-// =====================================================================
 
 pub const P_BLACK:        Color = Color::new(0.122, 0.098, 0.098, 1.0);
 pub const P_DARK1:        Color = Color::new(0.130, 0.137, 0.122, 1.0);
@@ -54,10 +50,6 @@ pub const P_AMBER:        Color = Color::new(0.733, 0.545, 0.298, 1.0);
 pub const P_ORANGE:       Color = Color::new(0.655, 0.404, 0.243, 1.0);
 pub const P_KHAKI:        Color = Color::new(0.616, 0.510, 0.341, 1.0);
 
-// =====================================================================
-//  COLORES SEMÁNTICOS
-// =====================================================================
-
 pub const COLOR_BG_DARK:   Color = P_BLACK;
 pub const COLOR_BG_ALT:    Color = P_DARK2;
 pub const COLOR_TEXT:       Color = P_CREAM;
@@ -75,9 +67,10 @@ pub const COLOR_SUCCESS:   Color = P_FOREST;
 pub const COLOR_BAR_BG:    Color = P_DARK1;
 pub const COLOR_DIALOG_BG: Color = P_DARK_MAROON;
 pub const COLOR_ROSE:      Color = P_DUSTY_ROSE;
+pub const COLOR_INFO_TEXT: Color = P_PALE_GREEN;
 
 pub fn bar_height() -> f32 {
-    (screen_height() * BAR_HEIGHT_RATIO).max(36.0)
+    (screen_height() * BAR_HEIGHT_RATIO).max(32.0)
 }
 
 pub fn scale() -> f32 {
@@ -88,76 +81,41 @@ pub fn safe_top() -> f32 {
     if cfg!(target_os = "android") { 24.0 * scale() } else { 0.0 }
 }
 
-/// Altura del overlay de botones en la parte inferior (para móvil o PC)
-/// Devuelve la altura que ocupan los controles overlay desde abajo
 pub fn overlay_height() -> f32 {
     let s = scale();
-    let btn_size = (screen_height() * BTN_RATIO).max(40.0);
-    // El overlay tiene dpad + botones AB + algo de padding
-    // Estimamos: botón más grande + padding inferior
     if cfg!(target_os = "android") {
+        let btn_size = (screen_height() * BTN_RATIO).max(40.0);
         btn_size * 3.0 + BTN_PAD * 2.0
     } else {
-        // En PC el overlay de teclas es más pequeño
         let indicator_h = 28.0 * s + 8.0;
         indicator_h + BTN_PAD
     }
 }
 
-/// Área segura inferior: desde dónde podemos dibujar sin tapar overlay
 pub fn safe_bottom() -> f32 {
     screen_height() - overlay_height()
 }
 
-pub fn fs_bar() -> u16        { (24.0 * scale()) as u16 }
-pub fn fs_hint() -> u16       { (18.0 * scale()) as u16 }
-pub fn fs_sel_name() -> u16   { (28.0 * scale()) as u16 }
-pub fn fs_sel_sci() -> u16    { (18.0 * scale()) as u16 }
-pub fn fs_sel_title() -> u16  { (34.0 * scale()) as u16 }
-pub fn fs_sel_sub() -> u16    { (20.0 * scale()) as u16 }
-pub fn fs_anim_name() -> u16  { (32.0 * scale()) as u16 }
-pub fn fs_anim_sci() -> u16   { (22.0 * scale()) as u16 }
-pub fn fs_anim_desc() -> u16  { (28.0 * scale()) as u16 }  // Más grande
-pub fn fs_anim_init() -> u16  { (72.0 * scale()) as u16 }
-pub fn fs_place() -> u16      { (40.0 * scale()) as u16 }
-pub fn fs_mini() -> u16       { (9.0 * scale()) as u16 }
-pub fn fs_btn() -> u16        { (22.0 * scale()) as u16 }
-pub fn fs_foto_count() -> u16 { (16.0 * scale()) as u16 }
-pub fn fs_foto_rec() -> u16   { (14.0 * scale()) as u16 }
-pub fn fs_foto_bird() -> u16  { (48.0 * scale()) as u16 }
-pub fn fs_foto_name() -> u16  { (18.0 * scale()) as u16 }
-pub fn fs_titulo() -> u16     { (48.0 * scale()) as u16 }
-pub fn fs_subtitulo() -> u16  { (20.0 * scale()) as u16 }
-pub fn fs_dialogo() -> u16    { (22.0 * scale()) as u16 }
-pub fn fs_menu() -> u16       { (26.0 * scale()) as u16 }
-pub fn fs_libreta() -> u16    { (20.0 * scale()) as u16 }
-pub fn fs_pesca() -> u16      { (28.0 * scale()) as u16 }
-pub fn fs_evento() -> u16     { (18.0 * scale()) as u16 }
-pub fn fs_quiz() -> u16       { (22.0 * scale()) as u16 }
-pub fn fs_indicador() -> u16  { (20.0 * scale()) as u16 }
-pub fn fs_fase_dia() -> u16   { (14.0 * scale()) as u16 }
-pub fn fs_config() -> u16     { (24.0 * scale()) as u16 }
-pub fn fs_config_val() -> u16 { (20.0 * scale()) as u16 }
-
-pub fn mini_size() -> f32     { (12.0 * scale()).max(7.0) }
-pub fn mini_gap() -> f32      { (2.0 * scale()).max(1.0) }
-
+/// Calcula font size que quepa en el ancho dado, nunca mayor que max_fs
 pub fn fs_adaptativo(texto: &str, font: &Font, max_fs: u16, max_w: f32) -> u16 {
     let mut fs = max_fs;
     loop {
         let w = measure_text(texto, Some(font), fs, 1.0).width;
-        if w <= max_w || fs <= 8 { return fs; }
+        if w <= max_w || fs <= 6 { return fs; }
         fs -= 1;
     }
 }
 
-/// Calcula un font size que haga que el texto quepa en el ancho dado,
-/// pero nunca mayor que max_fs ni menor que min_fs
-pub fn fs_fit(texto: &str, font: &Font, max_fs: u16, min_fs: u16, max_w: f32) -> u16 {
-    let mut fs = max_fs;
-    loop {
-        let w = measure_text(texto, Some(font), fs, 1.0).width;
-        if w <= max_w || fs <= min_fs { return fs; }
-        fs -= 1;
-    }
+/// Mide la altura real del texto (ascent + descent)
+pub fn text_height(font: &Font, fs: u16) -> f32 {
+    let m = measure_text("Ay", Some(font), fs, 1.0);
+    m.height
 }
+
+/// Calcula font size basado en porcentaje de la altura de pantalla
+pub fn fs_pct(pct: f32) -> u16 {
+    (screen_height() * pct).max(8.0) as u16
+}
+
+pub fn mini_size() -> f32     { (12.0 * scale()).max(7.0) }
+pub fn mini_gap() -> f32      { (2.0 * scale()).max(1.0) }
