@@ -14,6 +14,8 @@ use crate::minijuego::{MinijuegoPesca, MinijuegoMuseo, FasePesca, FaseMuseo};
 use crate::plataforma::DetectorPlataforma;
 use crate::save::SaveData;
 
+const LIBRETA_POR_PAGINA: usize = 5;
+
 #[derive(PartialEq)]
 pub enum Pantalla {
     Inicio,
@@ -75,7 +77,6 @@ pub struct Transicion {
     pub cambiada: bool,
 }
 
-/// Info de animal para mostrar en pantalla de info (reutilizable)
 pub struct AnimalInfo {
     pub nombre_comun: String,
     pub nombre_cientifico: String,
@@ -100,6 +101,15 @@ impl AnimalInfo {
             nombre_comun: e.nombre.clone(),
             nombre_cientifico: e.cientifico.clone(),
             descripcion: e.descripcion.clone(),
+            texto_pos: 0, timer: 0.0, terminado: false,
+        }
+    }
+
+    pub fn mensaje(titulo: &str, desc: &str) -> Self {
+        Self {
+            nombre_comun: titulo.to_string(),
+            nombre_cientifico: String::new(),
+            descripcion: desc.to_string(),
             texto_pos: 0, timer: 0.0, terminado: false,
         }
     }
@@ -148,22 +158,29 @@ pub struct Estado {
     pub indicador_x_pressed: f32,
 
     pub necesita_sonido_animal: bool,
+    pub necesita_transicion_audio: Option<Escena>,
 
-    // Libreta
     pub libreta_seleccion: usize,
     pub libreta_info: Option<AnimalInfo>,
 
-    // Info compartida para pesca/museo
     pub info_overlay: Option<AnimalInfo>,
 }
 
 impl Estado {
-    pub fn new() -> Self {
+    pub fn new(db: &ZooDB) -> Self {
         let save = SaveData::cargar();
         let mut visitadas = save.visitadas.clone();
         let escena = save.escena.unwrap_or(Escena::EntradaPrincipal);
         visitadas.insert(escena);
         let menu_config = MenuConfig::new(&save);
+
+        // Restaurar libreta desde animales vistos guardados
+        let mut libreta = Libreta::new();
+        for nombre in &save.animales_vistos {
+            if let Some(animal) = db.animal_por_nombre(nombre) {
+                libreta.registrar_animal(&animal);
+            }
+        }
 
         Self {
             pantalla: Pantalla::Inicio,
@@ -177,7 +194,7 @@ impl Estado {
             dialogo: SistemaDialogo::new(),
             eventos: SistemaEventos::new(),
             ciclo: CicloDia::new(config::CICLO_DIA_SECS),
-            libreta: Libreta::new(),
+            libreta,
             pesca: MinijuegoPesca::new(),
             museo: MinijuegoMuseo::new(),
             plataforma: DetectorPlataforma::new(),
@@ -192,6 +209,7 @@ impl Estado {
             indicador_z_pressed: 0.0,
             indicador_x_pressed: 0.0,
             necesita_sonido_animal: false,
+            necesita_transicion_audio: None,
 
             libreta_seleccion: 0,
             libreta_info: None,
@@ -210,10 +228,10 @@ impl Estado {
           || self.en_transicion()
     }
 
-    /// True si estamos en una pantalla de info de animal (ocultar minimapa/overlay)
+    /// True si estamos en pantalla que debe ocultar minimapa y overlay
     pub fn en_pantalla_info(&self) -> bool {
         matches!(self.modo, ModoVista::ViendoAnimal { .. })
-        || matches!(self.modo, ModoVista::Foto { foto_tomada: true, .. })
+        || matches!(self.modo, ModoVista::Foto { .. })
         || matches!(self.modo, ModoVista::Seleccion { .. })
         || self.pesca.activo
         || self.museo.activo
@@ -305,6 +323,8 @@ impl Estado {
         self.transicion = Some(Transicion {
             destino, timer: 0.0, duracion: self.duracion_transicion, cambiada: false,
         });
+        // Disparar audio al mismo tiempo que la transición visual
+        self.necesita_transicion_audio = Some(destino);
     }
 
     pub fn en_transicion(&self) -> bool { self.transicion.is_some() }
@@ -328,7 +348,9 @@ impl Estado {
             Pantalla::LibretaCompleta => self.input_libreta(accion),
             Pantalla::Juego => {
                 if self.dialogo.activo {
-                    if accion == Accion::BotonA || accion == Accion::BotonB { self.dialogo.avanzar(); }
+                    if accion == Accion::BotonA || accion == Accion::BotonB {
+                        self.dialogo.avanzar();
+                    }
                     return;
                 }
                 if self.eventos.hay_evento() {
@@ -339,7 +361,6 @@ impl Estado {
                     }
                     return;
                 }
-                // Info overlay de pesca/museo
                 if let Some(ref mut info) = self.info_overlay {
                     match accion {
                         Accion::BotonA => {
@@ -365,6 +386,7 @@ impl Estado {
                 }
                 if accion == Accion::Libreta {
                     self.libreta_seleccion = 0;
+                    self.libreta.pagina = 0;
                     self.libreta_info = None;
                     self.pantalla = Pantalla::LibretaCompleta;
                     return;
@@ -376,14 +398,21 @@ impl Estado {
 
     fn input_inicio(&mut self, accion: Accion, db: &ZooDB) {
         match accion {
-            Accion::Arriba => { if self.inicio_seleccion > 0 { self.inicio_seleccion -= 1; } }
-            Accion::Abajo => { if self.inicio_seleccion < 3 { self.inicio_seleccion += 1; } }
+            Accion::Arriba => {
+                if self.inicio_seleccion > 0 { self.inicio_seleccion -= 1; }
+            }
+            Accion::Abajo => {
+                if self.inicio_seleccion < 3 { self.inicio_seleccion += 1; }
+            }
             Accion::BotonA => {
                 match self.inicio_seleccion {
                     0 => { self.ciclo.set_modo(ModoCiclo::Sistema); self.iniciar_intro(db); }
                     1 => { self.ciclo.set_modo(ModoCiclo::DiaPermanente); self.iniciar_intro(db); }
                     2 => { self.ciclo.set_modo(ModoCiclo::NochePermanente); self.iniciar_intro(db); }
-                    3 => { self.menu_config = MenuConfig::new(&self.save); self.pantalla = Pantalla::Config; }
+                    3 => {
+                        self.menu_config = MenuConfig::new(&self.save);
+                        self.pantalla = Pantalla::Config;
+                    }
                     _ => {}
                 }
             }
@@ -395,27 +424,50 @@ impl Estado {
         self.pantalla = Pantalla::Intro;
         self.intro_timer = 0.0;
         let dialogos = guia::dialogos_bienvenida_db(db, &self.plataforma);
-        if !dialogos.is_empty() { self.dialogo.iniciar_desde_db(dialogos); }
-        else { self.dialogo.iniciar(guia::dialogos_bienvenida(&self.plataforma)); }
+        if !dialogos.is_empty() {
+            self.dialogo.iniciar_desde_db(dialogos);
+        } else {
+            self.dialogo.iniciar(guia::dialogos_bienvenida(&self.plataforma));
+        }
     }
 
     fn input_intro(&mut self, accion: Accion) {
-        if accion == Accion::BotonA || accion == Accion::BotonB { self.dialogo.avanzar(); }
+        if accion == Accion::BotonA || accion == Accion::BotonB {
+            self.dialogo.avanzar();
+        }
     }
 
     fn input_config(&mut self, accion: Accion) {
         let mc = &mut self.menu_config;
         match accion {
             Accion::Arriba => { if mc.seleccion > 0 { mc.seleccion -= 1; } }
-            Accion::Abajo => { if mc.seleccion + 1 < MenuConfig::OPCIONES.len() { mc.seleccion += 1; } }
-            Accion::Izquierda => { match mc.seleccion { 0 => mc.volumen_musica = (mc.volumen_musica - 0.1).max(0.0), 1 => mc.volumen_efectos = (mc.volumen_efectos - 0.1).max(0.0), _ => {} } }
-            Accion::Derecha => { match mc.seleccion { 0 => mc.volumen_musica = (mc.volumen_musica + 0.1).min(1.0), 1 => mc.volumen_efectos = (mc.volumen_efectos + 0.1).min(1.0), _ => {} } }
+            Accion::Abajo => {
+                if mc.seleccion + 1 < MenuConfig::OPCIONES.len() { mc.seleccion += 1; }
+            }
+            Accion::Izquierda => {
+                match mc.seleccion {
+                    0 => mc.volumen_musica = (mc.volumen_musica - 0.1).max(0.0),
+                    1 => mc.volumen_efectos = (mc.volumen_efectos - 0.1).max(0.0),
+                    _ => {}
+                }
+            }
+            Accion::Derecha => {
+                match mc.seleccion {
+                    0 => mc.volumen_musica = (mc.volumen_musica + 0.1).min(1.0),
+                    1 => mc.volumen_efectos = (mc.volumen_efectos + 0.1).min(1.0),
+                    _ => {}
+                }
+            }
             Accion::BotonA | Accion::BotonB => {
                 if mc.seleccion == MenuConfig::OPCIONES.len() - 1 || accion == Accion::BotonB {
                     self.save.config.volumen_musica = mc.volumen_musica;
                     self.save.config.volumen_efectos = mc.volumen_efectos;
                     self.save.guardar();
-                    self.pantalla = if self.dialogo.completado { Pantalla::Juego } else { Pantalla::Inicio };
+                    self.pantalla = if self.dialogo.completado {
+                        Pantalla::Juego
+                    } else {
+                        Pantalla::Inicio
+                    };
                 }
             }
             _ => {}
@@ -426,11 +478,18 @@ impl Estado {
         match accion {
             Accion::BotonB | Accion::Mapa => { self.pantalla = Pantalla::Juego; }
             Accion::Arriba | Accion::Abajo | Accion::Izquierda | Accion::Derecha => {
-                let idx = match accion { Accion::Arriba => 0, Accion::Abajo => 1, Accion::Izquierda => 2, Accion::Derecha => 3, _ => return };
-                if let Some(dest) = self.mapa_cursor.conexiones()[idx] { self.mapa_cursor = dest; }
+                let idx = match accion {
+                    Accion::Arriba => 0, Accion::Abajo => 1,
+                    Accion::Izquierda => 2, Accion::Derecha => 3, _ => return,
+                };
+                if let Some(dest) = self.mapa_cursor.conexiones()[idx] {
+                    self.mapa_cursor = dest;
+                }
             }
             Accion::BotonA => {
-                if self.mapa_cursor != self.escena && self.visitadas.contains(&self.mapa_cursor) {
+                if self.mapa_cursor != self.escena
+                    && self.visitadas.contains(&self.mapa_cursor)
+                {
                     self.pantalla = Pantalla::Juego;
                     self.cambiar_escena(self.mapa_cursor);
                 }
@@ -440,6 +499,7 @@ impl Estado {
     }
 
     fn input_libreta(&mut self, accion: Accion) {
+        // Si estamos viendo info de un animal
         if let Some(ref mut info) = self.libreta_info {
             match accion {
                 Accion::BotonB => { self.libreta_info = None; }
@@ -455,8 +515,18 @@ impl Estado {
         let total = self.libreta.entradas.len();
         match accion {
             Accion::BotonB | Accion::Libreta => { self.pantalla = Pantalla::Juego; }
-            Accion::Arriba => { if self.libreta_seleccion > 0 { self.libreta_seleccion -= 1; } }
-            Accion::Abajo => { if total > 0 && self.libreta_seleccion + 1 < total { self.libreta_seleccion += 1; } }
+            Accion::Arriba => {
+                if self.libreta_seleccion > 0 {
+                    self.libreta_seleccion -= 1;
+                    self.libreta.pagina = self.libreta_seleccion / LIBRETA_POR_PAGINA;
+                }
+            }
+            Accion::Abajo => {
+                if total > 0 && self.libreta_seleccion + 1 < total {
+                    self.libreta_seleccion += 1;
+                    self.libreta.pagina = self.libreta_seleccion / LIBRETA_POR_PAGINA;
+                }
+            }
             Accion::BotonA => {
                 if total > 0 && self.libreta_seleccion < total {
                     let entry = &self.libreta.entradas[self.libreta_seleccion];
@@ -473,7 +543,6 @@ impl Estado {
                 match self.pesca.fase {
                     FasePesca::Picando => {
                         self.pesca.tirar();
-                        // Si atrapó, mostrar info
                         if self.pesca.fase == FasePesca::InfoPez {
                             if let Some(ref pez) = self.pesca.pez_actual {
                                 self.info_overlay = Some(AnimalInfo {
@@ -518,8 +587,8 @@ impl Estado {
                     FaseMuseo::Excavando => {
                         self.museo.golpear();
                         if self.museo.fase == FaseMuseo::FosilRevelado {
-                            if let Some(ref dino) = self.museo.dino_excavado {
-                                if self.museo.fosil_encontrado {
+                            if self.museo.fosil_encontrado {
+                                if let Some(ref dino) = self.museo.dino_excavado {
                                     self.info_overlay = Some(AnimalInfo {
                                         nombre_comun: dino.nombre.clone(),
                                         nombre_cientifico: dino.cientifico.clone(),
@@ -527,6 +596,12 @@ impl Estado {
                                         texto_pos: 0, timer: 0.0, terminado: false,
                                     });
                                 }
+                            } else {
+                                // Mensaje de fallo claro
+                                self.info_overlay = Some(AnimalInfo::mensaje(
+                                    "Excavacion incompleta",
+                                    "Se agotaron los golpes sin revelar el fosil completo. Puedes intentarlo de nuevo desde el menu del museo.",
+                                ));
                             }
                             self.museo.volver_explorar();
                         }
@@ -550,19 +625,34 @@ impl Estado {
                 }
             }
             Accion::Arriba => match self.museo.fase {
-                FaseMuseo::Explorando => { if self.museo.indice > 0 { self.museo.indice -= 1; } }
+                FaseMuseo::Explorando => {
+                    if self.museo.indice > 0 { self.museo.indice -= 1; }
+                }
                 FaseMuseo::Excavando => { self.museo.mover_cursor(0, -1); }
-                FaseMuseo::Quiz if !self.museo.quiz_respondida => { if self.museo.quiz_seleccion > 0 { self.museo.quiz_seleccion -= 1; } }
+                FaseMuseo::Quiz if !self.museo.quiz_respondida => {
+                    if self.museo.quiz_seleccion > 0 { self.museo.quiz_seleccion -= 1; }
+                }
                 _ => {}
             }
             Accion::Abajo => match self.museo.fase {
-                FaseMuseo::Explorando => { let m = self.museo.exhibiciones.len() + 1; if self.museo.indice < m { self.museo.indice += 1; } }
+                FaseMuseo::Explorando => {
+                    let m = self.museo.exhibiciones.len() + 1;
+                    if self.museo.indice < m { self.museo.indice += 1; }
+                }
                 FaseMuseo::Excavando => { self.museo.mover_cursor(0, 1); }
-                FaseMuseo::Quiz if !self.museo.quiz_respondida => { if self.museo.quiz_seleccion + 1 < self.museo.quiz_opciones.len() { self.museo.quiz_seleccion += 1; } }
+                FaseMuseo::Quiz if !self.museo.quiz_respondida => {
+                    if self.museo.quiz_seleccion + 1 < self.museo.quiz_opciones.len() {
+                        self.museo.quiz_seleccion += 1;
+                    }
+                }
                 _ => {}
             }
-            Accion::Izquierda => { if self.museo.fase == FaseMuseo::Excavando { self.museo.mover_cursor(-1, 0); } }
-            Accion::Derecha => { if self.museo.fase == FaseMuseo::Excavando { self.museo.mover_cursor(1, 0); } }
+            Accion::Izquierda => {
+                if self.museo.fase == FaseMuseo::Excavando { self.museo.mover_cursor(-1, 0); }
+            }
+            Accion::Derecha => {
+                if self.museo.fase == FaseMuseo::Excavando { self.museo.mover_cursor(1, 0); }
+            }
             _ => {}
         }
     }
@@ -574,8 +664,12 @@ impl Estado {
             ModoVista::Normal => {
                 match accion {
                     Accion::BotonA => {
-                        if self.escena == Escena::Acuario { self.pesca.iniciar(); return; }
-                        if self.escena == Escena::Museo { self.museo.iniciar(); return; }
+                        if self.escena == Escena::Acuario {
+                            self.pesca.iniciar(); return;
+                        }
+                        if self.escena == Escena::Museo {
+                            self.museo.iniciar(); return;
+                        }
                         if self.escena.es_entrada() { return; }
                         let animales = db.animales_zona(&self.escena);
                         if animales.is_empty() { return; }
@@ -584,8 +678,8 @@ impl Estado {
                             let celda = gen_range(0, 4_usize);
                             self.modo = ModoVista::Foto {
                                 animales, indice_actual: idx, celda,
-                                foto_tomada: false, texto_pos: 0, timer: 0.0, terminado: false,
-                                ya_vistos: HashSet::new(),
+                                foto_tomada: false, texto_pos: 0, timer: 0.0,
+                                terminado: false, ya_vistos: HashSet::new(),
                             };
                         } else {
                             self.modo = ModoVista::Seleccion { animales, indice: 0 };
@@ -593,15 +687,22 @@ impl Estado {
                     }
                     Accion::BotonB => {}
                     dir => {
-                        let idx = match dir { Accion::Arriba => 0, Accion::Abajo => 1, Accion::Izquierda => 2, Accion::Derecha => 3, _ => return };
-                        if let Some(destino) = self.escena.conexiones()[idx] { self.cambiar_escena(destino); }
+                        let idx = match dir {
+                            Accion::Arriba => 0, Accion::Abajo => 1,
+                            Accion::Izquierda => 2, Accion::Derecha => 3, _ => return,
+                        };
+                        if let Some(destino) = self.escena.conexiones()[idx] {
+                            self.cambiar_escena(destino);
+                        }
                     }
                 }
             }
             ModoVista::Seleccion { animales, indice } => {
                 match accion {
                     Accion::Arriba => { if *indice > 0 { *indice -= 1; } }
-                    Accion::Abajo => { if *indice + 1 < animales.len() { *indice += 1; } }
+                    Accion::Abajo => {
+                        if *indice + 1 < animales.len() { *indice += 1; }
+                    }
                     Accion::BotonA => {
                         let animal = animales[*indice].clone();
                         let lista = animales.clone();
@@ -622,21 +723,31 @@ impl Estado {
             ModoVista::ViendoAnimal { animal, lista, indice_lista, texto_pos, terminado, .. } => {
                 match accion {
                     Accion::BotonB => {
-                        let lista_c = lista.clone(); let idx = *indice_lista;
+                        let lista_c = lista.clone();
+                        let idx = *indice_lista;
                         self.modo = ModoVista::Seleccion { animales: lista_c, indice: idx };
                     }
                     Accion::BotonA => {
-                        if *terminado { self.necesita_sonido_animal = true; }
-                        else { *texto_pos = animal.descripcion.chars().count(); *terminado = true; }
+                        if *terminado {
+                            // Reproducir sonido cada vez que se presiona Z
+                            self.necesita_sonido_animal = true;
+                        } else {
+                            *texto_pos = animal.descripcion.chars().count();
+                            *terminado = true;
+                        }
                     }
                     _ => {}
                 }
             }
-            ModoVista::Foto { animales, indice_actual, celda, foto_tomada, texto_pos, timer, terminado, ya_vistos } => {
+            ModoVista::Foto {
+                animales, indice_actual, celda, foto_tomada,
+                texto_pos, timer, terminado, ya_vistos,
+            } => {
                 if !*foto_tomada {
                     match accion {
                         Accion::BotonA => {
-                            *foto_tomada = true; *timer = 0.0; *texto_pos = 0; *terminado = false;
+                            *foto_tomada = true;
+                            *timer = 0.0; *texto_pos = 0; *terminado = false;
                             ya_vistos.insert(*indice_actual);
                             let a = &animales[*indice_actual];
                             self.libreta.registrar_animal(a);
@@ -648,12 +759,21 @@ impl Estado {
                         _ => {}
                     }
                 } else if *terminado {
-                    let disponibles: Vec<usize> = (0..animales.len()).filter(|i| !ya_vistos.contains(i)).collect();
-                    if disponibles.is_empty() { self.modo = ModoVista::Normal; }
-                    else {
+                    let disponibles: Vec<usize> = (0..animales.len())
+                        .filter(|i| !ya_vistos.contains(i)).collect();
+                    if disponibles.is_empty() {
+                        // Aviario completado: mensaje de felicitación
+                        let total = animales.len();
+                        self.info_overlay = Some(AnimalInfo::mensaje(
+                            "Aviario completado!",
+                            &format!("Has fotografiado las {} aves del aviario. Excelente trabajo de campo!", total),
+                        ));
+                        self.modo = ModoVista::Normal;
+                    } else {
                         *indice_actual = disponibles[gen_range(0, disponibles.len())];
                         *celda = gen_range(0, 4_usize);
-                        *foto_tomada = false; *texto_pos = 0; *timer = 0.0; *terminado = false;
+                        *foto_tomada = false;
+                        *texto_pos = 0; *timer = 0.0; *terminado = false;
                     }
                 } else {
                     *texto_pos = animales[*indice_actual].descripcion.chars().count();
