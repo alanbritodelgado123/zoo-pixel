@@ -41,28 +41,25 @@ async fn main() {
     let font_bytes = include_bytes!("../assets/fonts/PressStart2P.ttf");
     let font = load_ttf_font_from_bytes(font_bytes).expect("No se pudo cargar la fuente");
 
-    // Fondos - usar entrada para todas las zonas
     let entrada_bytes = include_bytes!("../assets/fondos/pixel/px_entrada.png");
     let fondos = Fondos::new(entrada_bytes);
-    // Todas las zonas usan el fallback (entrada) por ahora
 
     let mut audio = AudioManager::new();
     audio.set_fallback(include_bytes!("../assets/audio/ambiente/amb_entrada.ogg")).await;
     audio.agregar_efecto("transicion", include_bytes!("../assets/audio/efectos/fx_transicion.wav")).await;
     audio.agregar_efecto("boton", include_bytes!("../assets/audio/efectos/fx_boton.wav")).await;
 
-    // Todas las zonas usan amb_entrada por ahora
     for escena in escena::Escena::TODAS {
         audio.agregar_ambiente(*escena, include_bytes!("../assets/audio/ambiente/amb_entrada.ogg")).await;
     }
 
-    let mut estado = Estado::new();
-    estado.duracion_transicion = audio.duracion_transicion().max(config::TRANSITION_MIN);
+    // Duración visual = efecto + margen para fade
+    let mut estado = Estado::new(&db);
+    estado.duracion_transicion = (audio.duracion_transicion() + 0.2).max(config::TRANSITION_MIN);
 
     let ui = UiRenderer::new(font);
 
     audio.iniciar_ambiente(estado.escena);
-    let mut escena_anterior = estado.escena;
 
     loop {
         let dt = get_frame_time().min(0.1);
@@ -77,25 +74,28 @@ async fn main() {
         audio.set_volumen_musica(estado.save.config.volumen_musica);
         audio.set_volumen_efectos(estado.save.config.volumen_efectos);
 
-        if estado.escena != escena_anterior {
-            audio.transicionar_a(estado.escena);
-            escena_anterior = estado.escena;
+        // Transición de audio sincronizada con la visual
+        if let Some(destino) = estado.necesita_transicion_audio.take() {
+            audio.transicionar_a(destino);
         }
 
-        // Sonido animal
+        // Sonido animal: simple, sin tracking, se puede repetir
         if estado.necesita_sonido_animal {
             estado.necesita_sonido_animal = false;
-            audio.reproducir_animal();
-        }
-
-        // Al salir de ViendoAnimal, parar sonido animal
-        if !matches!(estado.modo, estado::ModoVista::ViendoAnimal { .. }) && audio.animal_sonando() {
-            audio.parar_animal();
+            audio.efecto_unico("boton");
         }
 
         ui.render(&estado, &fondos);
 
-        if estado.mostrar_overlay && !cfg!(target_os = "android") {
+        // Overlay PC: solo en juego normal sin info/minijuegos/diálogos/eventos
+        let mostrar_overlay_pc = estado.mostrar_overlay
+            && !cfg!(target_os = "android")
+            && !estado.en_pantalla_info()
+            && !estado.dialogo.activo
+            && !estado.eventos.hay_evento()
+            && !estado.en_transicion();
+
+        if mostrar_overlay_pc {
             render_pc_overlay(&estado, &ui.font);
         }
 
@@ -128,7 +128,11 @@ fn render_pc_overlay(estado: &Estado, font: &Font) {
     for (key, pressed) in indicators {
         let texto = format!("[{}]", key);
         let tw = measure_text(&texto, Some(font), fs, 1.0).width;
-        let color = if *pressed > 0.0 { config::COLOR_ACCENT } else { Color::new(0.7, 0.7, 0.7, 0.4) };
+        let color = if *pressed > 0.0 {
+            config::COLOR_ACCENT
+        } else {
+            Color::new(0.3, 0.3, 0.3, 1.0)
+        };
         draw_text_ex(&texto, x, y, TextParams {
             font: Some(font), font_size: fs, color, ..Default::default()
         });

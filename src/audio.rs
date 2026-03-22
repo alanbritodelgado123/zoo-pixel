@@ -23,8 +23,6 @@ pub struct AudioManager {
     transicion_timer: f32,
     transicion_duracion: f32,
     fade_speed: f32,
-    animal_sound: Option<Sound>,
-    animal_playing: bool,
 }
 
 impl AudioManager {
@@ -42,8 +40,6 @@ impl AudioManager {
             transicion_timer: 0.0,
             transicion_duracion: 0.0,
             fade_speed: 5.0,
-            animal_sound: None,
-            animal_playing: false,
         }
     }
 
@@ -84,13 +80,20 @@ impl AudioManager {
         let accion = match &mut self.estado {
             EstadoAudio::FadeOut { vol_actual } => {
                 *vol_actual -= self.fade_speed * dt;
-                if *vol_actual <= 0.0 { Some(AccionAudio::TerminarFade) }
-                else { let v = *vol_actual; Some(AccionAudio::AplicarVol(v)) }
+                if *vol_actual <= 0.0 {
+                    Some(AccionAudio::TerminarFade)
+                } else {
+                    let v = *vol_actual;
+                    Some(AccionAudio::AplicarVol(v))
+                }
             }
             EstadoAudio::EsperandoTransicion => {
                 self.transicion_timer += dt;
-                if self.transicion_timer >= self.transicion_duracion { Some(AccionAudio::IniciarPendiente) }
-                else { None }
+                if self.transicion_timer >= self.transicion_duracion {
+                    Some(AccionAudio::IniciarPendiente)
+                } else {
+                    None
+                }
             }
             _ => None,
         };
@@ -136,64 +139,81 @@ impl AudioManager {
     }
 
     fn iniciar_ambiente_interno(&mut self, escena: Escena) {
-        let sound = if let Some(s) = self.ambientes.get(&escena) { s }
-        else if let Some(ref fb) = self.fallback { fb }
-        else { self.sonido_actual = Some(escena); return; };
-        play_sound(sound, PlaySoundParams { looped: true, volume: self.volumen_musica });
+        let sound = if let Some(s) = self.ambientes.get(&escena) {
+            s
+        } else if let Some(ref fb) = self.fallback {
+            fb
+        } else {
+            self.sonido_actual = Some(escena);
+            return;
+        };
+        play_sound(sound, PlaySoundParams {
+            looped: true,
+            volume: self.volumen_musica,
+        });
         self.sonido_actual = Some(escena);
     }
 
     fn parar_actual(&mut self) {
         if let Some(escena) = self.sonido_actual.take() {
-            if let Some(sound) = self.ambientes.get(&escena) { stop_sound(sound); }
-            else if let Some(ref fb) = self.fallback { stop_sound(fb); }
+            if let Some(sound) = self.ambientes.get(&escena) {
+                stop_sound(sound);
+            } else if let Some(ref fb) = self.fallback {
+                stop_sound(fb);
+            }
         }
     }
 
     fn aplicar_volumen(&self, vol: f32) {
         if let Some(escena) = &self.sonido_actual {
-            if let Some(sound) = self.ambientes.get(escena) { set_sound_volume(sound, vol); }
-            else if let Some(ref fb) = self.fallback { set_sound_volume(fb, vol); }
+            if let Some(sound) = self.ambientes.get(escena) {
+                set_sound_volume(sound, vol);
+            } else if let Some(ref fb) = self.fallback {
+                set_sound_volume(fb, vol);
+            }
         }
     }
 
     fn reproducir_efecto_transicion(&self) {
         if let Some(sound) = self.efectos.get("transicion") {
-            play_sound(sound, PlaySoundParams { looped: false, volume: self.volumen_efectos });
+            play_sound(sound, PlaySoundParams {
+                looped: false,
+                volume: self.volumen_efectos,
+            });
         }
     }
 
+    /// Reproduce un efecto permitiendo solapamiento (para efectos cortos simultáneos)
     pub fn efecto(&self, nombre: &str) {
         if let Some(sound) = self.efectos.get(nombre) {
-            play_sound(sound, PlaySoundParams { looped: false, volume: self.volumen_efectos });
+            play_sound(sound, PlaySoundParams {
+                looped: false,
+                volume: self.volumen_efectos,
+            });
         }
     }
 
-    pub fn reproducir_animal(&mut self) {
-        // Parar el anterior si está sonando
-        self.parar_animal();
-        if let Some(sound) = self.efectos.get("boton") {
-            play_sound(sound, PlaySoundParams { looped: false, volume: self.volumen_efectos });
-            self.animal_sound = Some(sound.clone());
-            self.animal_playing = true;
-        }
-    }
-
-    pub fn parar_animal(&mut self) {
-        if let Some(ref sound) = self.animal_sound {
+    /// Reproduce un efecto deteniendo la instancia previa (evita solapamiento)
+    pub fn efecto_unico(&self, nombre: &str) {
+        if let Some(sound) = self.efectos.get(nombre) {
             stop_sound(sound);
+            play_sound(sound, PlaySoundParams {
+                looped: false,
+                volume: self.volumen_efectos,
+            });
         }
-        self.animal_playing = false;
     }
-
-    pub fn animal_sonando(&self) -> bool { self.animal_playing }
 
     pub fn en_transicion(&self) -> bool {
         matches!(self.estado, EstadoAudio::FadeOut { .. } | EstadoAudio::EsperandoTransicion)
     }
 }
 
-enum AccionAudio { TerminarFade, AplicarVol(f32), IniciarPendiente }
+enum AccionAudio {
+    TerminarFade,
+    AplicarVol(f32),
+    IniciarPendiente,
+}
 
 fn duracion_wav(bytes: &[u8]) -> Option<f32> {
     if bytes.len() < 44 { return None; }
@@ -203,8 +223,12 @@ fn duracion_wav(bytes: &[u8]) -> Option<f32> {
     let mut pos = 12;
     while pos + 8 <= bytes.len() {
         let chunk_id = &bytes[pos..pos + 4];
-        let chunk_size = u32::from_le_bytes([bytes[pos + 4], bytes[pos + 5], bytes[pos + 6], bytes[pos + 7]]);
-        if chunk_id == b"data" { return Some(chunk_size as f32 / byte_rate as f32); }
+        let chunk_size = u32::from_le_bytes([
+            bytes[pos + 4], bytes[pos + 5], bytes[pos + 6], bytes[pos + 7],
+        ]);
+        if chunk_id == b"data" {
+            return Some(chunk_size as f32 / byte_rate as f32);
+        }
         pos += 8 + chunk_size as usize;
         if pos % 2 != 0 { pos += 1; }
     }
