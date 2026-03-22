@@ -1,42 +1,36 @@
 {
   "escena": "Acuario",
   "visitadas": [
-    "B5",
-    "D1",
-    "D3",
-    "B2",
-    "C2",
-    "Aviario",
-    "B3",
-    "EntradaPrincipal",
-    "EntradaSecundaria",
-    "C1",
-    "D2",
-    "Acuario",
-    "Museo",
-    "A1",
-    "A3",
-    "C3",
     "B1",
-    "B4",
+    "Museo",
+    "EntradaPrincipal",
+    "Acuario",
     "AreaCentral",
+    "A3",
+    "B4",
+    "D3",
+    "B3",
+    "B2",
     "D4",
+    "D2",
+    "Aviario",
+    "A1",
+    "D1",
+    "C2",
+    "C3",
     "A2"
   ],
-  "libreta": [],
   "animales_vistos": [
     "Oso Frontino",
-    "Cóndor Andino",
-    "Báquiro",
-    "Guacamaya Bandera",
+    "Gallito de las Rocas",
+    "Caimán del Orinoco",
+    "Jaguar",
     "Tucán Piapoco",
-    "Flamenco del Caribe",
-    "Chigüire"
+    "Puma",
+    "Venado Caramerudo"
   ],
-  "eventos_vistos": [],
   "config": {
     "volumen_musica": 0.6,
-    "volumen_efectos": 0.8,
-    "idioma": "es"
+    "volumen_efectos": 0.6
   }
 }

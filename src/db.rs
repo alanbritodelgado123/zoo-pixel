@@ -300,49 +300,21 @@ impl ZooDB {
 
     /// Obtener diálogos de bienvenida, intercalando el específico de plataforma
     pub fn dialogos_bienvenida(&self, es_tactil: bool) -> Vec<DialogoDB> {
-        let base = self.dialogos_por_contexto("bienvenida");
         let plataforma_ctx = if es_tactil { "bienvenida_tactil" } else { "bienvenida_teclado" };
+        let base = self.dialogos_por_contexto("bienvenida");
         let especificos = self.dialogos_por_contexto(plataforma_ctx);
 
-        // Insertar los específicos de plataforma en orden 4
         let mut resultado = Vec::new();
-        let mut insertado = false;
         for d in &base {
-            if d.orden >= 4 && !insertado {
-                for e in &especificos {
-                    resultado.push(e.clone());
-                }
-                insertado = true;
-            }
-            if d.orden != 4 || insertado {
-                resultado.push(d.clone());
-            }
-        }
-        if !insertado {
-            for e in &especificos {
-                resultado.push(e.clone());
-            }
-        }
-        // Quitar duplicados de orden 4 base
-        resultado.retain(|d| !(d.contexto == "bienvenida" && d.orden == 4));
-
-        // Re-filtrar: solo los que no son de bienvenida con orden 4
-        // Más simple: reconstruir
-        let mut final_list = Vec::new();
-        for d in self.dialogos_por_contexto("bienvenida") {
-            if d.orden < 4 {
-                final_list.push(d);
-            }
+            if d.orden < 4 { resultado.push(d.clone()); }
         }
         for e in &especificos {
-            final_list.push(e.clone());
+            resultado.push(e.clone());
         }
-        for d in self.dialogos_por_contexto("bienvenida") {
-            if d.orden > 4 {
-                final_list.push(d);
-            }
+        for d in &base {
+            if d.orden > 4 { resultado.push(d.clone()); }
         }
-        final_list
+        resultado
     }
 
     pub fn dialogos_evento(&self, tipo: &str) -> Vec<DialogoDB> {
@@ -384,7 +356,8 @@ impl ZooDB {
         }).unwrap().filter_map(|r| r.ok()).collect()
     }
 
-    pub fn animales_zona_por_nombre(&self, nombre: &str) -> Option<Animal> {
+    // RENOMBRAR animales_zona_por_nombre → animal_por_nombre
+    pub fn animal_por_nombre(&self, nombre: &str) -> Option<Animal> {
         self.conn.query_row(
             "SELECT id, zona_id, nombre_comun, nombre_cientifico, descripcion
              FROM animales WHERE nombre_comun = ?1",
