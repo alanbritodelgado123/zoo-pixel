@@ -75,6 +75,50 @@ pub struct Transicion {
     pub cambiada: bool,
 }
 
+/// Info de animal para mostrar en pantalla de info (reutilizable)
+pub struct AnimalInfo {
+    pub nombre_comun: String,
+    pub nombre_cientifico: String,
+    pub descripcion: String,
+    pub texto_pos: usize,
+    pub timer: f32,
+    pub terminado: bool,
+}
+
+impl AnimalInfo {
+    pub fn from_animal(a: &Animal) -> Self {
+        Self {
+            nombre_comun: a.nombre_comun.clone(),
+            nombre_cientifico: a.nombre_cientifico.clone(),
+            descripcion: a.descripcion.clone(),
+            texto_pos: 0, timer: 0.0, terminado: false,
+        }
+    }
+
+    pub fn from_libreta(e: &crate::libreta::EntradaLibreta) -> Self {
+        Self {
+            nombre_comun: e.nombre.clone(),
+            nombre_cientifico: e.cientifico.clone(),
+            descripcion: e.descripcion.clone(),
+            texto_pos: 0, timer: 0.0, terminado: false,
+        }
+    }
+
+    pub fn update(&mut self, dt: f32) {
+        if self.terminado { return; }
+        self.timer += dt;
+        let chars = (self.timer * config::TYPEWRITER_CPS) as usize;
+        let total = self.descripcion.chars().count();
+        if chars >= total { self.texto_pos = total; self.terminado = true; }
+        else { self.texto_pos = chars; }
+    }
+
+    pub fn completar(&mut self) {
+        self.texto_pos = self.descripcion.chars().count();
+        self.terminado = true;
+    }
+}
+
 pub struct Estado {
     pub pantalla: Pantalla,
     pub escena: Escena,
@@ -104,6 +148,13 @@ pub struct Estado {
     pub indicador_x_pressed: f32,
 
     pub necesita_sonido_animal: bool,
+
+    // Libreta
+    pub libreta_seleccion: usize,
+    pub libreta_info: Option<AnimalInfo>,
+
+    // Info compartida para pesca/museo
+    pub info_overlay: Option<AnimalInfo>,
 }
 
 impl Estado {
@@ -141,6 +192,10 @@ impl Estado {
             indicador_z_pressed: 0.0,
             indicador_x_pressed: 0.0,
             necesita_sonido_animal: false,
+
+            libreta_seleccion: 0,
+            libreta_info: None,
+            info_overlay: None,
         }
     }
 
@@ -155,19 +210,27 @@ impl Estado {
           || self.en_transicion()
     }
 
+    /// True si estamos en una pantalla de info de animal (ocultar minimapa/overlay)
+    pub fn en_pantalla_info(&self) -> bool {
+        matches!(self.modo, ModoVista::ViendoAnimal { .. })
+        || matches!(self.modo, ModoVista::Foto { foto_tomada: true, .. })
+        || matches!(self.modo, ModoVista::Seleccion { .. })
+        || self.pesca.activo
+        || self.museo.activo
+        || self.libreta_info.is_some()
+        || self.info_overlay.is_some()
+    }
+
     pub fn update(&mut self, dt: f32) {
         self.plataforma.update();
 
         if self.indicador_z_pressed > 0.0 { self.indicador_z_pressed -= dt * 3.0; }
         if self.indicador_x_pressed > 0.0 { self.indicador_x_pressed -= dt * 3.0; }
 
-        // Overlay solo en Juego y no en mapa/libreta
         self.mostrar_overlay = matches!(self.pantalla, Pantalla::Juego);
 
         match self.pantalla {
-            Pantalla::Inicio => {
-                self.inicio_timer += dt;
-            }
+            Pantalla::Inicio => { self.inicio_timer += dt; }
             Pantalla::Intro => {
                 self.intro_timer += dt;
                 self.dialogo.update(dt);
@@ -195,12 +258,15 @@ impl Estado {
                 }
 
                 self.update_typewriter(dt);
+                if let Some(ref mut info) = self.info_overlay { info.update(dt); }
                 self.pesca.update(dt);
                 self.museo.update(dt);
             }
             Pantalla::Config => {}
             Pantalla::MapaCompleto => {}
-            Pantalla::LibretaCompleta => {}
+            Pantalla::LibretaCompleta => {
+                if let Some(ref mut info) = self.libreta_info { info.update(dt); }
+            }
         }
     }
 
@@ -235,11 +301,9 @@ impl Estado {
     }
 
     pub fn cambiar_escena(&mut self, destino: Escena) {
+        if destino == self.escena { return; }
         self.transicion = Some(Transicion {
-            destino,
-            timer: 0.0,
-            duracion: self.duracion_transicion,
-            cambiada: false,
+            destino, timer: 0.0, duracion: self.duracion_transicion, cambiada: false,
         });
     }
 
@@ -261,12 +325,10 @@ impl Estado {
             Pantalla::Intro => self.input_intro(accion),
             Pantalla::Config => self.input_config(accion),
             Pantalla::MapaCompleto => self.input_mapa(accion),
-            Pantalla::LibretaCompleta => self.input_libreta_completa(accion),
+            Pantalla::LibretaCompleta => self.input_libreta(accion),
             Pantalla::Juego => {
                 if self.dialogo.activo {
-                    if accion == Accion::BotonA || accion == Accion::BotonB {
-                        self.dialogo.avanzar();
-                    }
+                    if accion == Accion::BotonA || accion == Accion::BotonB { self.dialogo.avanzar(); }
                     return;
                 }
                 if self.eventos.hay_evento() {
@@ -277,14 +339,20 @@ impl Estado {
                     }
                     return;
                 }
-                if self.pesca.activo {
-                    self.input_pesca(accion);
+                // Info overlay de pesca/museo
+                if let Some(ref mut info) = self.info_overlay {
+                    match accion {
+                        Accion::BotonA => {
+                            if info.terminado { self.info_overlay = None; }
+                            else { info.completar(); }
+                        }
+                        Accion::BotonB => { self.info_overlay = None; }
+                        _ => {}
+                    }
                     return;
                 }
-                if self.museo.activo {
-                    self.input_museo(accion);
-                    return;
-                }
+                if self.pesca.activo { self.input_pesca(accion); return; }
+                if self.museo.activo { self.input_museo(accion); return; }
                 if accion == Accion::Mapa {
                     self.mapa_cursor = self.escena;
                     self.pantalla = Pantalla::MapaCompleto;
@@ -296,6 +364,8 @@ impl Estado {
                     return;
                 }
                 if accion == Accion::Libreta {
+                    self.libreta_seleccion = 0;
+                    self.libreta_info = None;
                     self.pantalla = Pantalla::LibretaCompleta;
                     return;
                 }
@@ -306,12 +376,8 @@ impl Estado {
 
     fn input_inicio(&mut self, accion: Accion, db: &ZooDB) {
         match accion {
-            Accion::Arriba => {
-                if self.inicio_seleccion > 0 { self.inicio_seleccion -= 1; }
-            }
-            Accion::Abajo => {
-                if self.inicio_seleccion < 3 { self.inicio_seleccion += 1; }
-            }
+            Accion::Arriba => { if self.inicio_seleccion > 0 { self.inicio_seleccion -= 1; } }
+            Accion::Abajo => { if self.inicio_seleccion < 3 { self.inicio_seleccion += 1; } }
             Accion::BotonA => {
                 match self.inicio_seleccion {
                     0 => { self.ciclo.set_modo(ModoCiclo::Sistema); self.iniciar_intro(db); }
@@ -329,18 +395,12 @@ impl Estado {
         self.pantalla = Pantalla::Intro;
         self.intro_timer = 0.0;
         let dialogos = guia::dialogos_bienvenida_db(db, &self.plataforma);
-        if !dialogos.is_empty() {
-            self.dialogo.iniciar_desde_db(dialogos);
-        } else {
-            let fallback = guia::dialogos_bienvenida(&self.plataforma);
-            self.dialogo.iniciar(fallback);
-        }
+        if !dialogos.is_empty() { self.dialogo.iniciar_desde_db(dialogos); }
+        else { self.dialogo.iniciar(guia::dialogos_bienvenida(&self.plataforma)); }
     }
 
     fn input_intro(&mut self, accion: Accion) {
-        if accion == Accion::BotonA || accion == Accion::BotonB {
-            self.dialogo.avanzar();
-        }
+        if accion == Accion::BotonA || accion == Accion::BotonB { self.dialogo.avanzar(); }
     }
 
     fn input_config(&mut self, accion: Accion) {
@@ -348,20 +408,8 @@ impl Estado {
         match accion {
             Accion::Arriba => { if mc.seleccion > 0 { mc.seleccion -= 1; } }
             Accion::Abajo => { if mc.seleccion + 1 < MenuConfig::OPCIONES.len() { mc.seleccion += 1; } }
-            Accion::Izquierda => {
-                match mc.seleccion {
-                    0 => mc.volumen_musica = (mc.volumen_musica - 0.1).max(0.0),
-                    1 => mc.volumen_efectos = (mc.volumen_efectos - 0.1).max(0.0),
-                    _ => {}
-                }
-            }
-            Accion::Derecha => {
-                match mc.seleccion {
-                    0 => mc.volumen_musica = (mc.volumen_musica + 0.1).min(1.0),
-                    1 => mc.volumen_efectos = (mc.volumen_efectos + 0.1).min(1.0),
-                    _ => {}
-                }
-            }
+            Accion::Izquierda => { match mc.seleccion { 0 => mc.volumen_musica = (mc.volumen_musica - 0.1).max(0.0), 1 => mc.volumen_efectos = (mc.volumen_efectos - 0.1).max(0.0), _ => {} } }
+            Accion::Derecha => { match mc.seleccion { 0 => mc.volumen_musica = (mc.volumen_musica + 0.1).min(1.0), 1 => mc.volumen_efectos = (mc.volumen_efectos + 0.1).min(1.0), _ => {} } }
             Accion::BotonA | Accion::BotonB => {
                 if mc.seleccion == MenuConfig::OPCIONES.len() - 1 || accion == Accion::BotonB {
                     self.save.config.volumen_musica = mc.volumen_musica;
@@ -378,27 +426,43 @@ impl Estado {
         match accion {
             Accion::BotonB | Accion::Mapa => { self.pantalla = Pantalla::Juego; }
             Accion::Arriba | Accion::Abajo | Accion::Izquierda | Accion::Derecha => {
-                let idx = match accion {
-                    Accion::Arriba => 0, Accion::Abajo => 1,
-                    Accion::Izquierda => 2, Accion::Derecha => 3, _ => return,
-                };
+                let idx = match accion { Accion::Arriba => 0, Accion::Abajo => 1, Accion::Izquierda => 2, Accion::Derecha => 3, _ => return };
                 if let Some(dest) = self.mapa_cursor.conexiones()[idx] { self.mapa_cursor = dest; }
             }
             Accion::BotonA => {
-                if self.visitadas.contains(&self.mapa_cursor) && self.mapa_cursor != self.escena {
-                    self.cambiar_escena(self.mapa_cursor);
+                if self.mapa_cursor != self.escena && self.visitadas.contains(&self.mapa_cursor) {
                     self.pantalla = Pantalla::Juego;
+                    self.cambiar_escena(self.mapa_cursor);
                 }
             }
             _ => {}
         }
     }
 
-    fn input_libreta_completa(&mut self, accion: Accion) {
+    fn input_libreta(&mut self, accion: Accion) {
+        if let Some(ref mut info) = self.libreta_info {
+            match accion {
+                Accion::BotonB => { self.libreta_info = None; }
+                Accion::BotonA => {
+                    if info.terminado { self.libreta_info = None; }
+                    else { info.completar(); }
+                }
+                _ => {}
+            }
+            return;
+        }
+
+        let total = self.libreta.entradas.len();
         match accion {
             Accion::BotonB | Accion::Libreta => { self.pantalla = Pantalla::Juego; }
-            Accion::Izquierda => self.libreta.pagina_anterior(),
-            Accion::Derecha => self.libreta.pagina_siguiente(),
+            Accion::Arriba => { if self.libreta_seleccion > 0 { self.libreta_seleccion -= 1; } }
+            Accion::Abajo => { if total > 0 && self.libreta_seleccion + 1 < total { self.libreta_seleccion += 1; } }
+            Accion::BotonA => {
+                if total > 0 && self.libreta_seleccion < total {
+                    let entry = &self.libreta.entradas[self.libreta_seleccion];
+                    self.libreta_info = Some(AnimalInfo::from_libreta(entry));
+                }
+            }
             _ => {}
         }
     }
@@ -407,24 +471,26 @@ impl Estado {
         match accion {
             Accion::BotonA => {
                 match self.pesca.fase {
-                    FasePesca::Picando => self.pesca.tirar(),
-                    FasePesca::InfoPez => {
-                        if self.pesca.texto_terminado { self.pesca.siguiente_o_salir(); }
-                        else if let Some(ref pez) = self.pesca.pez_actual {
-                            self.pesca.texto_pos = pez.descripcion.chars().count();
-                            self.pesca.texto_terminado = true;
+                    FasePesca::Picando => {
+                        self.pesca.tirar();
+                        // Si atrapó, mostrar info
+                        if self.pesca.fase == FasePesca::InfoPez {
+                            if let Some(ref pez) = self.pesca.pez_actual {
+                                self.info_overlay = Some(AnimalInfo {
+                                    nombre_comun: pez.nombre.clone(),
+                                    nombre_cientifico: pez.cientifico.clone(),
+                                    descripcion: pez.descripcion.clone(),
+                                    texto_pos: 0, timer: 0.0, terminado: false,
+                                });
+                            }
+                            self.pesca.siguiente_o_salir();
                         }
                     }
                     FasePesca::Resultado => self.pesca.siguiente_o_salir(),
                     _ => {}
                 }
             }
-            Accion::BotonB => {
-                match self.pesca.fase {
-                    FasePesca::InfoPez => self.pesca.siguiente_o_salir(),
-                    _ => self.pesca.cerrar(),
-                }
-            }
+            Accion::BotonB => { self.pesca.cerrar(); }
             _ => {}
         }
     }
@@ -435,37 +501,52 @@ impl Estado {
                 match self.museo.fase {
                     FaseMuseo::Entrada => self.museo.entrar_explorando(),
                     FaseMuseo::Explorando => {
-                        if self.museo.indice < self.museo.exhibiciones.len() { self.museo.ver_exhibicion(); }
-                        else if self.museo.indice == self.museo.exhibiciones.len() { self.museo.iniciar_excavacion(); }
-                        else { self.museo.iniciar_quiz(); }
-                    }
-                    FaseMuseo::Excavando => { self.museo.golpear(); }
-                    FaseMuseo::FosilRevelado => {
-                        if self.museo.terminado_texto { self.museo.volver_explorar(); }
-                        else {
-                            let d = self.museo.dino_excavado.as_ref().map(|d| d.descripcion.chars().count()).unwrap_or(0);
-                            self.museo.texto_pos = d; self.museo.terminado_texto = true;
+                        if self.museo.indice < self.museo.exhibiciones.len() {
+                            let dino = &self.museo.exhibiciones[self.museo.indice];
+                            self.info_overlay = Some(AnimalInfo {
+                                nombre_comun: dino.nombre.clone(),
+                                nombre_cientifico: dino.cientifico.clone(),
+                                descripcion: dino.descripcion.clone(),
+                                texto_pos: 0, timer: 0.0, terminado: false,
+                            });
+                        } else if self.museo.indice == self.museo.exhibiciones.len() {
+                            self.museo.iniciar_excavacion();
+                        } else {
+                            self.museo.iniciar_quiz();
                         }
                     }
-                    FaseMuseo::ViendoExhibicion => {
-                        if self.museo.terminado_texto { self.museo.volver_explorar(); }
-                        else { self.museo.texto_pos = self.museo.dino_actual().descripcion.chars().count(); self.museo.terminado_texto = true; }
+                    FaseMuseo::Excavando => {
+                        self.museo.golpear();
+                        if self.museo.fase == FaseMuseo::FosilRevelado {
+                            if let Some(ref dino) = self.museo.dino_excavado {
+                                if self.museo.fosil_encontrado {
+                                    self.info_overlay = Some(AnimalInfo {
+                                        nombre_comun: dino.nombre.clone(),
+                                        nombre_cientifico: dino.cientifico.clone(),
+                                        descripcion: dino.descripcion.clone(),
+                                        texto_pos: 0, timer: 0.0, terminado: false,
+                                    });
+                                }
+                            }
+                            self.museo.volver_explorar();
+                        }
                     }
                     FaseMuseo::Quiz => {
                         if self.museo.quiz_respondida { self.museo.siguiente_quiz(); }
                         else { self.museo.responder_quiz(); }
                     }
+                    _ => {}
                 }
             }
             Accion::BotonB => {
                 match self.museo.fase {
-                    FaseMuseo::Entrada => self.museo.cerrar(),
-                    FaseMuseo::ViendoExhibicion | FaseMuseo::Excavando | FaseMuseo::FosilRevelado => self.museo.volver_explorar(),
-                    FaseMuseo::Explorando => self.museo.cerrar(),
+                    FaseMuseo::Entrada | FaseMuseo::Explorando => self.museo.cerrar(),
+                    FaseMuseo::Excavando => self.museo.volver_explorar(),
                     FaseMuseo::Quiz => {
                         if self.museo.quiz_respondida { self.museo.siguiente_quiz(); }
                         else { self.museo.fase = FaseMuseo::Explorando; }
                     }
+                    _ => {}
                 }
             }
             Accion::Arriba => match self.museo.fase {
@@ -510,12 +591,9 @@ impl Estado {
                             self.modo = ModoVista::Seleccion { animales, indice: 0 };
                         }
                     }
-                    Accion::BotonB => { if !self.escena.es_entrada() { self.cambiar_escena(Escena::EntradaPrincipal); } }
+                    Accion::BotonB => {}
                     dir => {
-                        let idx = match dir {
-                            Accion::Arriba => 0, Accion::Abajo => 1,
-                            Accion::Izquierda => 2, Accion::Derecha => 3, _ => return,
-                        };
+                        let idx = match dir { Accion::Arriba => 0, Accion::Abajo => 1, Accion::Izquierda => 2, Accion::Derecha => 3, _ => return };
                         if let Some(destino) = self.escena.conexiones()[idx] { self.cambiar_escena(destino); }
                     }
                 }
@@ -528,7 +606,7 @@ impl Estado {
                         let animal = animales[*indice].clone();
                         let lista = animales.clone();
                         let idx = *indice;
-                        self.libreta.registrar_animal(&animal, &self.save);
+                        self.libreta.registrar_animal(&animal);
                         self.save.marcar_animal_visto(&animal.nombre_comun);
                         self.save.guardar();
                         self.necesita_sonido_animal = true;
@@ -548,13 +626,8 @@ impl Estado {
                         self.modo = ModoVista::Seleccion { animales: lista_c, indice: idx };
                     }
                     Accion::BotonA => {
-                        if *terminado {
-                            // Z = reproducir sonido de nuevo
-                            self.necesita_sonido_animal = true;
-                        } else {
-                            *texto_pos = animal.descripcion.chars().count();
-                            *terminado = true;
-                        }
+                        if *terminado { self.necesita_sonido_animal = true; }
+                        else { *texto_pos = animal.descripcion.chars().count(); *terminado = true; }
                     }
                     _ => {}
                 }
@@ -566,7 +639,7 @@ impl Estado {
                             *foto_tomada = true; *timer = 0.0; *texto_pos = 0; *terminado = false;
                             ya_vistos.insert(*indice_actual);
                             let a = &animales[*indice_actual];
-                            self.libreta.registrar_animal(a, &self.save);
+                            self.libreta.registrar_animal(a);
                             self.save.marcar_animal_visto(&a.nombre_comun);
                             self.save.guardar();
                             self.necesita_sonido_animal = true;

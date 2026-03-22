@@ -23,7 +23,6 @@ pub struct AudioManager {
     transicion_timer: f32,
     transicion_duracion: f32,
     fade_speed: f32,
-    // Para sonido de animal
     animal_sound: Option<Sound>,
     animal_playing: bool,
 }
@@ -78,32 +77,20 @@ impl AudioManager {
         if dur > 0.1 { dur } else { 0.5 }
     }
 
-    pub fn set_volumen_musica(&mut self, vol: f32) {
-        self.volumen_musica = vol;
-    }
-
-    pub fn set_volumen_efectos(&mut self, vol: f32) {
-        self.volumen_efectos = vol;
-    }
+    pub fn set_volumen_musica(&mut self, vol: f32) { self.volumen_musica = vol; }
+    pub fn set_volumen_efectos(&mut self, vol: f32) { self.volumen_efectos = vol; }
 
     pub fn update(&mut self, dt: f32) {
         let accion = match &mut self.estado {
             EstadoAudio::FadeOut { vol_actual } => {
                 *vol_actual -= self.fade_speed * dt;
-                if *vol_actual <= 0.0 {
-                    Some(AccionAudio::TerminarFade)
-                } else {
-                    let v = *vol_actual;
-                    Some(AccionAudio::AplicarVol(v))
-                }
+                if *vol_actual <= 0.0 { Some(AccionAudio::TerminarFade) }
+                else { let v = *vol_actual; Some(AccionAudio::AplicarVol(v)) }
             }
             EstadoAudio::EsperandoTransicion => {
                 self.transicion_timer += dt;
-                if self.transicion_timer >= self.transicion_duracion {
-                    Some(AccionAudio::IniciarPendiente)
-                } else {
-                    None
-                }
+                if self.transicion_timer >= self.transicion_duracion { Some(AccionAudio::IniciarPendiente) }
+                else { None }
             }
             _ => None,
         };
@@ -116,9 +103,7 @@ impl AudioManager {
                     self.estado = EstadoAudio::EsperandoTransicion;
                     self.transicion_timer = 0.0;
                 }
-                AccionAudio::AplicarVol(v) => {
-                    self.aplicar_volumen(v);
-                }
+                AccionAudio::AplicarVol(v) => self.aplicar_volumen(v),
                 AccionAudio::IniciarPendiente => {
                     if let Some(escena) = self.pendiente.take() {
                         self.iniciar_ambiente_interno(escena);
@@ -132,12 +117,9 @@ impl AudioManager {
     pub fn transicionar_a(&mut self, destino: Escena) {
         self.pendiente = Some(destino);
         self.transicion_duracion = self.duracion_transicion();
-
         match self.estado {
             EstadoAudio::Sonando => {
-                self.estado = EstadoAudio::FadeOut {
-                    vol_actual: self.volumen_musica,
-                };
+                self.estado = EstadoAudio::FadeOut { vol_actual: self.volumen_musica };
             }
             EstadoAudio::Silencio => {
                 self.reproducir_efecto_transicion();
@@ -154,73 +136,49 @@ impl AudioManager {
     }
 
     fn iniciar_ambiente_interno(&mut self, escena: Escena) {
-        let sound = if let Some(s) = self.ambientes.get(&escena) {
-            s
-        } else if let Some(ref fb) = self.fallback {
-            fb
-        } else {
-            self.sonido_actual = Some(escena);
-            return;
-        };
-        play_sound(sound, PlaySoundParams {
-            looped: true,
-            volume: self.volumen_musica,
-        });
+        let sound = if let Some(s) = self.ambientes.get(&escena) { s }
+        else if let Some(ref fb) = self.fallback { fb }
+        else { self.sonido_actual = Some(escena); return; };
+        play_sound(sound, PlaySoundParams { looped: true, volume: self.volumen_musica });
         self.sonido_actual = Some(escena);
     }
 
     fn parar_actual(&mut self) {
         if let Some(escena) = self.sonido_actual.take() {
-            if let Some(sound) = self.ambientes.get(&escena) {
-                stop_sound(sound);
-            } else if let Some(ref fb) = self.fallback {
-                stop_sound(fb);
-            }
+            if let Some(sound) = self.ambientes.get(&escena) { stop_sound(sound); }
+            else if let Some(ref fb) = self.fallback { stop_sound(fb); }
         }
     }
 
     fn aplicar_volumen(&self, vol: f32) {
         if let Some(escena) = &self.sonido_actual {
-            if let Some(sound) = self.ambientes.get(escena) {
-                set_sound_volume(sound, vol);
-            } else if let Some(ref fb) = self.fallback {
-                set_sound_volume(fb, vol);
-            }
+            if let Some(sound) = self.ambientes.get(escena) { set_sound_volume(sound, vol); }
+            else if let Some(ref fb) = self.fallback { set_sound_volume(fb, vol); }
         }
     }
 
     fn reproducir_efecto_transicion(&self) {
         if let Some(sound) = self.efectos.get("transicion") {
-            play_sound(sound, PlaySoundParams {
-                looped: false,
-                volume: self.volumen_efectos,
-            });
+            play_sound(sound, PlaySoundParams { looped: false, volume: self.volumen_efectos });
         }
     }
 
     pub fn efecto(&self, nombre: &str) {
         if let Some(sound) = self.efectos.get(nombre) {
-            play_sound(sound, PlaySoundParams {
-                looped: false,
-                volume: self.volumen_efectos,
-            });
+            play_sound(sound, PlaySoundParams { looped: false, volume: self.volumen_efectos });
         }
     }
 
-    /// Reproduce sonido del animal (usa efecto transicion como placeholder)
     pub fn reproducir_animal(&mut self) {
-        if self.animal_playing { return; }
-        if let Some(sound) = self.efectos.get("transicion") {
-            play_sound(sound, PlaySoundParams {
-                looped: false,
-                volume: self.volumen_efectos,
-            });
+        // Parar el anterior si está sonando
+        self.parar_animal();
+        if let Some(sound) = self.efectos.get("boton") {
+            play_sound(sound, PlaySoundParams { looped: false, volume: self.volumen_efectos });
             self.animal_sound = Some(sound.clone());
             self.animal_playing = true;
         }
     }
 
-    /// Detiene el sonido del animal con fade corto
     pub fn parar_animal(&mut self) {
         if let Some(ref sound) = self.animal_sound {
             stop_sound(sound);
@@ -228,20 +186,14 @@ impl AudioManager {
         self.animal_playing = false;
     }
 
-    pub fn animal_sonando(&self) -> bool {
-        self.animal_playing
-    }
+    pub fn animal_sonando(&self) -> bool { self.animal_playing }
 
     pub fn en_transicion(&self) -> bool {
         matches!(self.estado, EstadoAudio::FadeOut { .. } | EstadoAudio::EsperandoTransicion)
     }
 }
 
-enum AccionAudio {
-    TerminarFade,
-    AplicarVol(f32),
-    IniciarPendiente,
-}
+enum AccionAudio { TerminarFade, AplicarVol(f32), IniciarPendiente }
 
 fn duracion_wav(bytes: &[u8]) -> Option<f32> {
     if bytes.len() < 44 { return None; }
@@ -251,12 +203,8 @@ fn duracion_wav(bytes: &[u8]) -> Option<f32> {
     let mut pos = 12;
     while pos + 8 <= bytes.len() {
         let chunk_id = &bytes[pos..pos + 4];
-        let chunk_size = u32::from_le_bytes([
-            bytes[pos + 4], bytes[pos + 5], bytes[pos + 6], bytes[pos + 7],
-        ]);
-        if chunk_id == b"data" {
-            return Some(chunk_size as f32 / byte_rate as f32);
-        }
+        let chunk_size = u32::from_le_bytes([bytes[pos + 4], bytes[pos + 5], bytes[pos + 6], bytes[pos + 7]]);
+        if chunk_id == b"data" { return Some(chunk_size as f32 / byte_rate as f32); }
         pos += 8 + chunk_size as usize;
         if pos % 2 != 0 { pos += 1; }
     }
