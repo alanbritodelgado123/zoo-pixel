@@ -43,7 +43,7 @@ async fn main() {
 
     // Fondos - usar entrada para todas las zonas
     let entrada_bytes = include_bytes!("../assets/fondos/pixel/px_entrada.png");
-    let mut fondos = Fondos::new(entrada_bytes);
+    let fondos = Fondos::new(entrada_bytes);
     // Todas las zonas usan el fallback (entrada) por ahora
 
     let mut audio = AudioManager::new();

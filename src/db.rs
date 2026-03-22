@@ -300,7 +300,7 @@ impl ZooDB {
 
     /// Obtener diálogos de bienvenida, intercalando el específico de plataforma
     pub fn dialogos_bienvenida(&self, es_tactil: bool) -> Vec<DialogoDB> {
-        let mut base = self.dialogos_por_contexto("bienvenida");
+        let base = self.dialogos_por_contexto("bienvenida");
         let plataforma_ctx = if es_tactil { "bienvenida_tactil" } else { "bienvenida_teclado" };
         let especificos = self.dialogos_por_contexto(plataforma_ctx);
 
@@ -382,5 +382,20 @@ impl ZooDB {
         stmt.query_map([], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
         }).unwrap().filter_map(|r| r.ok()).collect()
+    }
+
+    pub fn animales_zona_por_nombre(&self, nombre: &str) -> Option<Animal> {
+        self.conn.query_row(
+            "SELECT id, zona_id, nombre_comun, nombre_cientifico, descripcion
+             FROM animales WHERE nombre_comun = ?1",
+            params![nombre],
+            |row| Ok(Animal {
+                id: row.get(0)?,
+                zona_id: row.get(1)?,
+                nombre_comun: row.get(2)?,
+                nombre_cientifico: row.get(3)?,
+                descripcion: row.get(4)?,
+            }),
+        ).ok()
     }
 }
