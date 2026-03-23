@@ -73,7 +73,18 @@ impl AudioManager {
         if dur > 0.1 { dur } else { 0.5 }
     }
 
-    pub fn set_volumen_musica(&mut self, vol: f32) { self.volumen_musica = vol; }
+    // Reemplazar set_volumen_musica:
+    pub fn set_volumen_musica(&mut self, vol: f32) {
+        self.volumen_musica = vol;
+        // Actualizar sonido ambiente que esté sonando ahora
+        if let Some(escena) = &self.sonido_actual {
+            if let Some(sound) = self.ambientes.get(escena) {
+                set_sound_volume(sound, vol);
+            } else if let Some(ref fb) = self.fallback {
+                set_sound_volume(fb, vol);
+            }
+        }
+    }
     pub fn set_volumen_efectos(&mut self, vol: f32) { self.volumen_efectos = vol; }
 
     pub fn update(&mut self, dt: f32) {
