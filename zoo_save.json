@@ -1,21 +1,35 @@
 {
-  "escena": "EntradaPrincipal",
+  "escena": "Acuario",
   "visitadas": [
-    "B3",
-    "D2",
-    "C1",
-    "AreaCentral",
-    "B2",
-    "A1",
-    "Museo",
-    "D3",
-    "Acuario",
     "D1",
-    "EntradaPrincipal"
+    "D2",
+    "B1",
+    "D4",
+    "Aviario",
+    "C3",
+    "A3",
+    "C1",
+    "A2",
+    "B4",
+    "A1",
+    "B2",
+    "EntradaPrincipal",
+    "AreaCentral",
+    "D3",
+    "EntradaSecundaria",
+    "B3",
+    "Acuario",
+    "C2",
+    "Museo"
   ],
-  "animales_vistos": [],
+  "animales_vistos": [
+    "Tonina",
+    "Manatí",
+    "Raya de Río",
+    "Danta"
+  ],
   "config": {
-    "volumen_musica": 0.5,
+    "volumen_musica": 0.4,
     "volumen_efectos": 0.5,
     "crt": true
   }
