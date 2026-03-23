@@ -1,36 +1,22 @@
 {
-  "escena": "Acuario",
+  "escena": "EntradaPrincipal",
   "visitadas": [
-    "B1",
-    "Museo",
-    "EntradaPrincipal",
-    "Acuario",
-    "AreaCentral",
-    "A3",
-    "B4",
-    "D3",
     "B3",
-    "B2",
-    "D4",
     "D2",
-    "Aviario",
+    "C1",
+    "AreaCentral",
+    "B2",
     "A1",
+    "Museo",
+    "D3",
+    "Acuario",
     "D1",
-    "C2",
-    "C3",
-    "A2"
+    "EntradaPrincipal"
   ],
-  "animales_vistos": [
-    "Oso Frontino",
-    "Gallito de las Rocas",
-    "Caimán del Orinoco",
-    "Jaguar",
-    "Tucán Piapoco",
-    "Puma",
-    "Venado Caramerudo"
-  ],
+  "animales_vistos": [],
   "config": {
-    "volumen_musica": 0.6,
-    "volumen_efectos": 0.6
+    "volumen_musica": 0.5,
+    "volumen_efectos": 0.5,
+    "crt": true
   }
 }
