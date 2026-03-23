@@ -400,6 +400,7 @@ impl Estado {
         }
     }
 
+    // REEMPLAZAR input_inicio:
     fn input_inicio(&mut self, accion: Accion, db: &ZooDB) {
         match accion {
             Accion::Arriba => {
@@ -410,9 +411,18 @@ impl Estado {
             }
             Accion::BotonA => {
                 match self.inicio_seleccion {
-                    0 => { self.ciclo.set_modo(ModoCiclo::Sistema); self.iniciar_intro(db); }
-                    1 => { self.ciclo.set_modo(ModoCiclo::DiaPermanente); self.iniciar_intro(db); }
-                    2 => { self.ciclo.set_modo(ModoCiclo::NochePermanente); self.iniciar_intro(db); }
+                    0 => {
+                        self.ciclo.set_modo(ModoCiclo::Sistema);
+                        self.entrar_juego(db);
+                    }
+                    1 => {
+                        self.ciclo.set_modo(ModoCiclo::DiaPermanente);
+                        self.entrar_juego(db);
+                    }
+                    2 => {
+                        self.ciclo.set_modo(ModoCiclo::NochePermanente);
+                        self.entrar_juego(db);
+                    }
                     3 => {
                         self.menu_config = MenuConfig::new(&self.save);
                         self.pantalla = Pantalla::Config;
@@ -421,6 +431,16 @@ impl Estado {
                 }
             }
             _ => {}
+        }
+    }
+
+        // AGREGAR este método nuevo:
+    fn entrar_juego(&mut self, db: &ZooDB) {
+        if self.dialogo.completado {
+            // Ya vio la intro, ir directo al juego
+            self.pantalla = Pantalla::Juego;
+        } else {
+            self.iniciar_intro(db);
         }
     }
 
@@ -680,42 +700,47 @@ impl Estado {
         if self.en_transicion() { return; }
 
         match &mut self.modo {
-            ModoVista::Normal => {
-                match accion {
-                    Accion::BotonA => {
-                        if self.escena == Escena::Acuario {
-                            self.pesca.iniciar(); return;
-                        }
-                        if self.escena == Escena::Museo {
-                            self.museo.iniciar(); return;
-                        }
-                        if self.escena.es_entrada() { return; }
-                        let animales = db.animales_zona(&self.escena);
-                        if animales.is_empty() { return; }
-                        if self.escena.es_aviario() {
-                            let idx = gen_range(0, animales.len());
-                            let celda = gen_range(0, 4_usize);
-                            self.modo = ModoVista::Foto {
-                                animales, indice_actual: idx, celda,
-                                foto_tomada: false, texto_pos: 0, timer: 0.0,
-                                terminado: false, ya_vistos: HashSet::new(),
-                            };
-                        } else {
-                            self.modo = ModoVista::Seleccion { animales, indice: 0 };
-                        }
-                    }
-                    Accion::BotonB => {}
-                    dir => {
-                        let idx = match dir {
-                            Accion::Arriba => 0, Accion::Abajo => 1,
-                            Accion::Izquierda => 2, Accion::Derecha => 3, _ => return,
-                        };
-                        if let Some(destino) = self.escena.conexiones()[idx] {
-                            self.cambiar_escena(destino);
-                        }
-                    }
+    ModoVista::Normal => {
+        match accion {
+            Accion::BotonA => {
+                if self.escena == Escena::Acuario {
+                    self.pesca.iniciar(); return;
+                }
+                if self.escena == Escena::Museo {
+                    self.museo.iniciar(); return;
+                }
+                if self.escena.es_entrada() { return; }
+                let animales = db.animales_zona(&self.escena);
+                if animales.is_empty() { return; }
+                if self.escena.es_aviario() {
+                    let idx = gen_range(0, animales.len());
+                    let celda = gen_range(0, 4_usize);
+                    self.modo = ModoVista::Foto {
+                        animales, indice_actual: idx, celda,
+                        foto_tomada: false, texto_pos: 0, timer: 0.0,
+                        terminado: false, ya_vistos: HashSet::new(),
+                    };
+                } else {
+                    self.modo = ModoVista::Seleccion { animales, indice: 0 };
                 }
             }
+            Accion::BotonB => {
+                // Volver a la pantalla de inicio
+                self.pantalla = Pantalla::Inicio;
+                self.inicio_seleccion = 0;
+            }
+            dir => {
+                let idx = match dir {
+                    Accion::Arriba => 0, Accion::Abajo => 1,
+                    Accion::Izquierda => 2, Accion::Derecha => 3,
+                    _ => return,
+                };
+                if let Some(destino) = self.escena.conexiones()[idx] {
+                    self.cambiar_escena(destino);
+                }
+            }
+        }
+    }
             ModoVista::Seleccion { animales, indice } => {
                 match accion {
                     Accion::Arriba => { if *indice > 0 { *indice -= 1; } }
