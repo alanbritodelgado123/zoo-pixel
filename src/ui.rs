@@ -1,4 +1,5 @@
 // src/ui.rs
+use std::cell::Cell;
 use macroquad::prelude::*;
 use crate::config::*;
 use crate::estado::*;
@@ -8,12 +9,16 @@ use crate::minijuego::{FasePesca, FaseMuseo, CeldaExcavacion, MinijuegoMuseo};
 
 pub struct UiRenderer {
     pub font: Font,
+    es_movil: Cell<bool>,
 }
 
 impl UiRenderer {
-    pub fn new(font: Font) -> Self { Self { font } }
+    pub fn new(font: Font) -> Self {
+        Self { font, es_movil: Cell::new(false) }
+    }
 
     pub fn render(&self, estado: &Estado, fondos: &Fondos) {
+        self.es_movil.set(estado.plataforma.es_movil());
         match estado.pantalla {
             Pantalla::Inicio => self.render_inicio(estado),
             Pantalla::Intro => self.render_intro(estado),
@@ -24,11 +29,25 @@ impl UiRenderer {
         }
     }
 
-    // ─── Hint con fondo: texto blanco sobre fondo gris semitransparente ───
+    // ─── Adaptación de hints según plataforma ───
+    fn adaptar_hint(&self, texto: &str) -> String {
+        if self.es_movil.get() {
+            texto
+                .replace("Z/X:", "A/B:")
+                .replace("Z:", "A:")
+                .replace("X:", "B:")
+                .replace("Z!", "A!")
+        } else {
+            texto.to_string()
+        }
+    }
+
+    // ─── Hint con fondo ───
     fn render_hint(&self, texto: &str, text_y: f32) {
         let sw = screen_width();
-        let fs = fs_adaptativo(texto, &self.font, fs_pct(0.022), sw * 0.92);
-        let tw = measure_text(texto, Some(&self.font), fs, 1.0).width;
+        let texto = self.adaptar_hint(texto);
+        let fs = fs_adaptativo(&texto, &self.font, fs_pct(0.022), sw * 0.92);
+        let tw = measure_text(&texto, Some(&self.font), fs, 1.0).width;
         let th = text_height(&self.font, fs);
         let pad_x = 10.0;
         let pad_y = 4.0;
@@ -38,9 +57,43 @@ impl UiRenderer {
         let bg_y = text_y - th - pad_y;
         draw_rectangle(bg_x, bg_y, bg_w, bg_h,
             Color::new(0.15, 0.15, 0.15, 0.6));
-        draw_text_ex(texto, (sw - tw) / 2.0, text_y,
+        draw_text_ex(&texto, (sw - tw) / 2.0, text_y,
             TextParams { font: Some(&self.font), font_size: fs,
                           color: WHITE, ..Default::default() });
+    }
+
+    // ─── Flecha triangular con sombra ───
+    fn draw_arrow_triangle(&self, cx: f32, cy: f32, dir: usize, size: f32) {
+        let so = (1.5 * scale()).max(1.0);
+        let points = match dir {
+            0 => [ // Arriba
+                vec2(cx, cy - size),
+                vec2(cx - size * 0.7, cy + size * 0.3),
+                vec2(cx + size * 0.7, cy + size * 0.3),
+            ],
+            1 => [ // Abajo
+                vec2(cx, cy + size),
+                vec2(cx - size * 0.7, cy - size * 0.3),
+                vec2(cx + size * 0.7, cy - size * 0.3),
+            ],
+            2 => [ // Izquierda
+                vec2(cx - size, cy),
+                vec2(cx + size * 0.3, cy - size * 0.7),
+                vec2(cx + size * 0.3, cy + size * 0.7),
+            ],
+            _ => [ // Derecha
+                vec2(cx + size, cy),
+                vec2(cx - size * 0.3, cy - size * 0.7),
+                vec2(cx - size * 0.3, cy + size * 0.7),
+            ],
+        };
+        draw_triangle(
+            points[0] + vec2(so, so),
+            points[1] + vec2(so, so),
+            points[2] + vec2(so, so),
+            Color::new(0.0, 0.0, 0.0, 0.5),
+        );
+        draw_triangle(points[0], points[1], points[2], WHITE);
     }
 
     // ─── Pantalla de info reutilizable ───
@@ -50,7 +103,6 @@ impl UiRenderer {
     {
         let sw = screen_width();
         draw_rectangle(0.0, top, sw, bottom - top, COLOR_BG_DARK);
-
         let available_h = bottom - top;
 
         let img_h = available_h * 0.22;
@@ -199,7 +251,6 @@ impl UiRenderer {
                               color, ..Default::default() });
 
             y += th_c + 8.0;
-
             match i {
                 0 => {
                     self.render_barra_vol(sw, y, bar_h_px,
@@ -283,7 +334,6 @@ impl UiRenderer {
             let size = cell * 0.65;
             let nx = x + (cell - size) / 2.0;
             let ny = y + (cell - size) / 2.0;
-
             let (bg, border) = if *escena == estado.mapa_cursor {
                 (COLOR_HIGHLIGHT, COLOR_ACCENT)
             } else if *escena == estado.escena {
@@ -294,7 +344,6 @@ impl UiRenderer {
                 (Color::new(0.12, 0.12, 0.12, 1.0),
                  Color::new(0.2, 0.2, 0.2, 1.0))
             };
-
             draw_rectangle(nx, ny, size, size, bg);
             draw_rectangle_lines(nx, ny, size, size, 2.0, border);
             let letra = escena.letra();
@@ -375,7 +424,6 @@ impl UiRenderer {
                 let y = y_start + i as f32 * item_h;
                 let selected = idx == estado.libreta_seleccion;
                 let color = if selected { COLOR_ACCENT } else { COLOR_TEXT };
-
                 if selected {
                     draw_text_ex(">", 15.0, y + th_name,
                         TextParams { font: Some(&self.font), font_size: fs_name,
@@ -386,7 +434,6 @@ impl UiRenderer {
                 draw_text_ex(&entry.nombre, text_x, y + th_name,
                     TextParams { font: Some(&self.font), font_size: name_fs,
                                   color, ..Default::default() });
-
                 draw_line(15.0, y + item_h - 4.0, sw - 15.0, y + item_h - 4.0,
                     1.0, Color::new(0.2, 0.2, 0.2, 1.0));
             }
@@ -502,39 +549,34 @@ impl UiRenderer {
                           color: COLOR_DIM, ..Default::default() });
     }
 
+    // ─── Normal: flechas triangulares con bounce 2-frame ───
     fn render_normal(&self, estado: &Estado, content_top: f32,
                      content_bottom: f32)
     {
         let sw = screen_width();
         let mid_y = (content_top + content_bottom) / 2.0;
         let conns = estado.escena.conexiones();
-        let fs_arrow = fs_pct(0.05);
+
+        let arrow_size = (12.0 * scale()).clamp(8.0, 20.0);
+        let bounce_frame = ((get_time() * 2.5) as i32 % 2) as f32;
+        let bounce_px = (3.0 * scale()).min(5.0);
+        let margin = arrow_size * 2.5;
 
         if conns[0].is_some() {
-            let a = "^";
-            let aw = measure_text(a, Some(&self.font), fs_arrow, 1.0).width;
-            draw_text_ex(a, (sw - aw) / 2.0, content_top + 50.0,
-                TextParams { font: Some(&self.font), font_size: fs_arrow,
-                              color: COLOR_HIGHLIGHT, ..Default::default() });
+            let cy = content_top + margin - bounce_px * bounce_frame;
+            self.draw_arrow_triangle(sw / 2.0, cy, 0, arrow_size);
         }
         if conns[1].is_some() {
-            let a = "v";
-            let aw = measure_text(a, Some(&self.font), fs_arrow, 1.0).width;
-            draw_text_ex(a, (sw - aw) / 2.0, content_bottom - 20.0,
-                TextParams { font: Some(&self.font), font_size: fs_arrow,
-                              color: COLOR_HIGHLIGHT, ..Default::default() });
+            let cy = content_bottom - margin - 30.0 + bounce_px * bounce_frame;
+            self.draw_arrow_triangle(sw / 2.0, cy, 1, arrow_size);
         }
         if conns[2].is_some() {
-            draw_text_ex("<", 10.0, mid_y,
-                TextParams { font: Some(&self.font), font_size: fs_arrow,
-                              color: COLOR_HIGHLIGHT, ..Default::default() });
+            let cx = margin - bounce_px * bounce_frame;
+            self.draw_arrow_triangle(cx, mid_y, 2, arrow_size);
         }
         if conns[3].is_some() {
-            let a = ">";
-            let aw = measure_text(a, Some(&self.font), fs_arrow, 1.0).width;
-            draw_text_ex(a, sw - aw - 10.0, mid_y,
-                TextParams { font: Some(&self.font), font_size: fs_arrow,
-                              color: COLOR_HIGHLIGHT, ..Default::default() });
+            let cx = sw - margin + bounce_px * bounce_frame;
+            self.draw_arrow_triangle(cx, mid_y, 3, arrow_size);
         }
 
         if !estado.escena.es_entrada() {
@@ -561,7 +603,6 @@ impl UiRenderer {
             let selected = i == indice;
             let color = if selected { COLOR_ACCENT } else { COLOR_TEXT };
             let y = y_start + i as f32 * item_h + th;
-
             if selected {
                 draw_text_ex(">", 15.0, y,
                     TextParams { font: Some(&self.font), font_size: fs_name,
@@ -627,6 +668,8 @@ impl UiRenderer {
         let fs_p = fs_pct(0.035);
         let mid_y = (content_top + content_bottom) / 2.0;
 
+        let boton = if self.es_movil.get() { "A" } else { "Z" };
+
         match pesca.fase {
             FasePesca::Esperando => {
                 let t = "Esperando picada...";
@@ -647,12 +690,12 @@ impl UiRenderer {
                 self.render_hint("X: Salir", content_bottom - 8.0);
             }
             FasePesca::Picando => {
-                let t = "!! PICA !! Z!";
-                let fs = fs_adaptativo(t, &self.font, fs_p, sw * 0.9);
-                let tw_t = measure_text(t, Some(&self.font), fs, 1.0).width;
+                let t = format!("!! PICA !! {}!", boton);
+                let fs = fs_adaptativo(&t, &self.font, fs_p, sw * 0.9);
+                let tw_t = measure_text(&t, Some(&self.font), fs, 1.0).width;
                 let blink = (get_time() * 6.0) as i32 % 2 == 0;
                 let color = if blink { COLOR_ACCENT } else { COLOR_DANGER };
-                draw_text_ex(t, (sw - tw_t) / 2.0, mid_y,
+                draw_text_ex(&t, (sw - tw_t) / 2.0, mid_y,
                     TextParams { font: Some(&self.font), font_size: fs,
                                   color, ..Default::default() });
                 let bar_w = sw * 0.6;
@@ -774,7 +817,6 @@ impl UiRenderer {
                          content_top: f32, content_bottom: f32)
     {
         let sw = screen_width();
-
         let golpes = format!("Golpes: {}/{}",
             museo.golpes_restantes, museo.max_golpes);
         let fs_g = fs_pct(0.022);
@@ -800,7 +842,6 @@ impl UiRenderer {
                 let y = oy + row as f32 * cell_size;
                 let is_cursor = col == museo.cursor_x
                     && row == museo.cursor_y;
-
                 let (bg, bc) = match museo.grilla[row][col] {
                     CeldaExcavacion::Roca(3) => (P_BROWN, P_DARK3),
                     CeldaExcavacion::Roca(2) => (P_WARM_BROWN, P_MID_BROWN),
@@ -809,10 +850,8 @@ impl UiRenderer {
                     CeldaExcavacion::Fosil => (P_GOLD, P_AMBER),
                     CeldaExcavacion::Vacio => (P_DARK2, P_DARK3),
                 };
-
                 draw_rectangle(x + 1.0, y + 1.0,
                     cell_size - 2.0, cell_size - 2.0, bg);
-
                 if is_cursor {
                     draw_rectangle_lines(x, y, cell_size, cell_size,
                         3.0, COLOR_ACCENT);
@@ -820,7 +859,6 @@ impl UiRenderer {
                     draw_rectangle_lines(x + 1.0, y + 1.0,
                         cell_size - 2.0, cell_size - 2.0, 1.0, bc);
                 }
-
                 if museo.grilla[row][col] == CeldaExcavacion::Fosil {
                     let fs_i = (cell_size * 0.4) as u16;
                     let itw = measure_text("*", Some(&self.font),
@@ -831,7 +869,6 @@ impl UiRenderer {
                         TextParams { font: Some(&self.font), font_size: fs_i,
                             color: COLOR_BG_DARK, ..Default::default() });
                 }
-
                 if let CeldaExcavacion::Roca(c) = museo.grilla[row][col] {
                     let num = format!("{}", c);
                     let fs_n = (cell_size * 0.25) as u16;
@@ -875,9 +912,7 @@ impl UiRenderer {
                 else if sel && !museo.quiz_correcta_resp { COLOR_DANGER }
                 else { COLOR_TEXT_DIM }
             } else if sel { COLOR_ACCENT } else { COLOR_TEXT };
-
             let y = y_opts + i as f32 * opt_h + th;
-
             if sel && !museo.quiz_respondida {
                 draw_text_ex(">", 30.0, y,
                     TextParams { font: Some(&self.font), font_size: fs_q,
@@ -889,16 +924,10 @@ impl UiRenderer {
         }
 
         if museo.quiz_respondida {
-            let msg = if museo.quiz_correcta_resp {
-                "Correcto!"
-            } else {
-                "Incorrecto"
-            };
-            let color = if museo.quiz_correcta_resp {
-                COLOR_GREEN
-            } else {
-                COLOR_DANGER
-            };
+            let msg = if museo.quiz_correcta_resp { "Correcto!" }
+                else { "Incorrecto" };
+            let color = if museo.quiz_correcta_resp { COLOR_GREEN }
+                else { COLOR_DANGER };
             let fs_r = fs_pct(0.035);
             let mtw = measure_text(msg, Some(&self.font), fs_r, 1.0).width;
             draw_text_ex(msg, (sw - mtw) / 2.0, content_bottom - 40.0,
@@ -915,7 +944,6 @@ impl UiRenderer {
         let sw = screen_width();
         let sh = screen_height();
         let sb = safe_bottom();
-
         let box_h = sh * 0.18;
         let box_y = sb - box_h - 8.0;
         let box_x = 8.0;
@@ -966,7 +994,6 @@ impl UiRenderer {
                      mostrar_info: bool, content_bottom: f32)
     {
         let sw = screen_width();
-
         if mostrar_info {
             let box_h = content_bottom * 0.15;
             let box_y = content_bottom - box_h - 8.0;
@@ -995,11 +1022,12 @@ impl UiRenderer {
                 TextParams { font: Some(&self.font), font_size: fs_e,
                               color: COLOR_WARM, ..Default::default() });
             let hint = "Z: Ver  X: Cerrar";
-            let hint_fs = fs_adaptativo(hint, &self.font,
+            let hint = self.adaptar_hint(hint);
+            let hint_fs = fs_adaptativo(&hint, &self.font,
                 fs_pct(0.02), sw * 0.4);
-            let htw = measure_text(hint, Some(&self.font),
+            let htw = measure_text(&hint, Some(&self.font),
                 hint_fs, 1.0).width;
-            draw_text_ex(hint, sw - htw - 15.0,
+            draw_text_ex(&hint, sw - htw - 15.0,
                 banner_y + banner_h * 0.7,
                 TextParams { font: Some(&self.font), font_size: hint_fs,
                               color: WHITE, ..Default::default() });
@@ -1027,28 +1055,21 @@ impl UiRenderer {
             let dc = c as i32 - centro_c;
             let dr = r as i32 - centro_r;
             if dc.abs() > radio || dr.abs() > radio { continue; }
-
             let x1 = map_x + (dc + radio) as f32 * (cell + gap) + cell / 2.0;
             let y1 = map_y + (dr + radio) as f32 * (cell + gap) + cell / 2.0;
-
             for conexion in escena.conexiones().iter().flatten() {
                 let (c2, r2) = conexion.pos_mapa();
                 let dc2 = c2 as i32 - centro_c;
                 let dr2 = r2 as i32 - centro_r;
                 if dc2.abs() > radio || dr2.abs() > radio { continue; }
-
                 let x2 = map_x + (dc2 + radio) as f32 * (cell + gap)
                     + cell / 2.0;
                 let y2 = map_y + (dr2 + radio) as f32 * (cell + gap)
                     + cell / 2.0;
-
                 let line_color = if estado.visitadas.contains(escena)
                     && estado.visitadas.contains(conexion)
-                {
-                    Color::new(0.4, 0.4, 0.3, 0.5)
-                } else {
-                    Color::new(0.2, 0.2, 0.2, 0.3)
-                };
+                { Color::new(0.4, 0.4, 0.3, 0.5) }
+                else { Color::new(0.2, 0.2, 0.2, 0.3) };
                 draw_line(x1, y1, x2, y2, 1.0, line_color);
             }
         }
@@ -1058,22 +1079,15 @@ impl UiRenderer {
             let dc = c as i32 - centro_c;
             let dr = r as i32 - centro_r;
             if dc.abs() > radio || dr.abs() > radio { continue; }
-
             let vx = (dc + radio) as f32 * (cell + gap);
             let vy = (dr + radio) as f32 * (cell + gap);
             let x = map_x + vx;
             let y = map_y + vy;
-
             draw_rectangle(x - 1.0, y - 1.0, cell + 2.0, cell + 2.0,
                 Color::new(0.0, 0.0, 0.0, 0.4));
-
-            let color = if *escena == estado.escena {
-                COLOR_ACCENT
-            } else if estado.visitadas.contains(escena) {
-                COLOR_DIM
-            } else {
-                Color::new(0.15, 0.15, 0.15, 0.6)
-            };
+            let color = if *escena == estado.escena { COLOR_ACCENT }
+                else if estado.visitadas.contains(escena) { COLOR_DIM }
+                else { Color::new(0.15, 0.15, 0.15, 0.6) };
             draw_rectangle(x, y, cell, cell, color);
         }
     }
