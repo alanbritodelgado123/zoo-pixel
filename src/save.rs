@@ -15,6 +15,7 @@ pub struct SaveData {
 pub struct ConfigGuardada {
     pub volumen_musica: f32,
     pub volumen_efectos: f32,
+    pub crt: bool,
 }
 
 impl Default for ConfigGuardada {
@@ -22,6 +23,7 @@ impl Default for ConfigGuardada {
         Self {
             volumen_musica: 0.6,
             volumen_efectos: 0.8,
+            crt: false,
         }
     }
 }

@@ -53,7 +53,9 @@ pub struct MenuConfig {
     pub seleccion: usize,
     pub volumen_musica: f32,
     pub volumen_efectos: f32,
+    pub crt: bool,
 }
+
 
 impl MenuConfig {
     pub fn new(save: &SaveData) -> Self {
@@ -61,11 +63,13 @@ impl MenuConfig {
             seleccion: 0,
             volumen_musica: save.config.volumen_musica,
             volumen_efectos: save.config.volumen_efectos,
+            crt: save.config.crt,
         }
     }
     pub const OPCIONES: &'static [&'static str] = &[
         "Volumen Musica",
         "Volumen Efectos",
+        "Filtro CRT",
         "Volver",
     ];
 }
@@ -439,15 +443,19 @@ impl Estado {
 
     fn input_config(&mut self, accion: Accion) {
         let mc = &mut self.menu_config;
+        let total = MenuConfig::OPCIONES.len();
         match accion {
-            Accion::Arriba => { if mc.seleccion > 0 { mc.seleccion -= 1; } }
+            Accion::Arriba => {
+                if mc.seleccion > 0 { mc.seleccion -= 1; }
+            }
             Accion::Abajo => {
-                if mc.seleccion + 1 < MenuConfig::OPCIONES.len() { mc.seleccion += 1; }
+                if mc.seleccion + 1 < total { mc.seleccion += 1; }
             }
             Accion::Izquierda => {
                 match mc.seleccion {
                     0 => mc.volumen_musica = (mc.volumen_musica - 0.1).max(0.0),
                     1 => mc.volumen_efectos = (mc.volumen_efectos - 0.1).max(0.0),
+                    2 => mc.crt = !mc.crt,
                     _ => {}
                 }
             }
@@ -455,23 +463,34 @@ impl Estado {
                 match mc.seleccion {
                     0 => mc.volumen_musica = (mc.volumen_musica + 0.1).min(1.0),
                     1 => mc.volumen_efectos = (mc.volumen_efectos + 0.1).min(1.0),
+                    2 => mc.crt = !mc.crt,
                     _ => {}
                 }
             }
-            Accion::BotonA | Accion::BotonB => {
-                if mc.seleccion == MenuConfig::OPCIONES.len() - 1 || accion == Accion::BotonB {
-                    self.save.config.volumen_musica = mc.volumen_musica;
-                    self.save.config.volumen_efectos = mc.volumen_efectos;
-                    self.save.guardar();
-                    self.pantalla = if self.dialogo.completado {
-                        Pantalla::Juego
-                    } else {
-                        Pantalla::Inicio
-                    };
+            Accion::BotonA => {
+                if mc.seleccion == 2 {
+                    mc.crt = !mc.crt;
+                } else if mc.seleccion == total - 1 {
+                    self.guardar_config();
                 }
+            }
+            Accion::BotonB => {
+                self.guardar_config();
             }
             _ => {}
         }
+    }
+
+    fn guardar_config(&mut self) {
+        self.save.config.volumen_musica = self.menu_config.volumen_musica;
+        self.save.config.volumen_efectos = self.menu_config.volumen_efectos;
+        self.save.config.crt = self.menu_config.crt;
+        self.save.guardar();
+        self.pantalla = if self.dialogo.completado {
+            Pantalla::Juego
+        } else {
+            Pantalla::Inicio
+        };
     }
 
     fn input_mapa(&mut self, accion: Accion) {

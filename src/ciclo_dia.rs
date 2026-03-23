@@ -46,10 +46,12 @@ impl CicloDia {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
-        let secs_en_dia = (ahora % 86400) as f32;
+        // UTC-4 para Venezuela
+        let local_secs = ahora.saturating_sub(4 * 3600);
+        let secs_en_dia = (local_secs % 86400) as f32;
         let hora = secs_en_dia / 3600.0;
-        // Dia: 6am-18pm, Noche: 18pm-6am
-        if hora >= 6.0 && hora < 18.0 { 0.25 } else { 0.75 }
+        // Día: 5am-9pm, Noche: 9pm-5am
+        if hora >= 5.0 && hora < 21.0 { 0.25 } else { 0.75 }
     }
 
     pub fn fase(&self) -> FaseDia {
