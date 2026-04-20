@@ -28,9 +28,15 @@ use escena::Escena;
 fn window_conf() -> Conf {
     Conf {
         window_title: "Zoo Pixel".to_owned(),
-        window_width: 480,
-        window_height: 800,
-        window_resizable: true,
+        window_width: 800,
+        window_height: 480,
+        window_resizable: !cfg!(target_os = "android"),  // ✅ Redimensionable solo en PC
+        high_dpi: true,
+        platform: PlatformSettings {
+            android_keep_screen_on: true,
+            android_orientation: ActivityOrientation::Landscape,  // ✅ Landscape en Android
+            ..Default::default()
+        },
         ..Default::default()
     }
 }
@@ -39,29 +45,29 @@ fn window_conf() -> Conf {
 async fn main() {
     let db = ZooDB::new();
     
-    // ✅ Cargar fuente
-    let font_bytes = include_bytes!("../assets/fonts/PressStart2P.ttf");
+    // ✅ Cargar fuente (ruta corregida)
+    let font_bytes = include_bytes!("assets/fonts/PressStart2P.ttf");
     let font = load_ttf_font_from_bytes(font_bytes).expect("No se pudo cargar la fuente");
-
-    // ✅ Cargar spritesheet de fondos
-    let spritesheet_bytes = include_bytes!("../assets/fondos/spritesheet_vertical.png");
+    
+    // ✅ Cargar spritesheet de fondos (ruta corregida)
+    let spritesheet_bytes = include_bytes!("assets/fondos/spritesheet_vertical.png");
     let fondos = Fondos::new(spritesheet_bytes, 640.0, 480.0);
-
-    // ✅ Cargar íconos de categoría (RUTAS CORREGIDAS: assets/ en lugar de ../assets/)
+    
+    // ✅ Cargar íconos de categoría (ruta corregida + SIN TILDE)
     let mut iconos_categoria: HashMap<String, Texture2D> = HashMap::new();
     let categorias = [
         ("anfibios", "anfibios_inspyrenet.png"),
         ("aves", "aves_inspyrenet.png"),
-        ("fosiles", "fósiles_inspyrenet.png"),  // ✅ CON TILDE
+        ("fosiles", "fosiles_inspyrenet.png"),  // ✅ SIN TILDE
         ("insectos", "insectos_inspyrenet.png"),
         ("mamiferos", "mamiferos_inspyrenet.png"),
         ("peces", "peces_inspyrenet.png"),
         ("primates", "primates_inspyrenet.png"),
         ("reptiles", "reptiles_inspyrenet.png"),
     ];
-
+    
     for (key, filename) in &categorias {
-        let path = format!("assets/categorias/{}", filename);  // ✅ SIN ../
+        let path = format!("assets/categorias/{}", filename);
         if let Ok(bytes) = std::fs::read(&path) {
             let tex = Texture2D::from_file_with_format(&bytes, Some(ImageFormat::Png));
             tex.set_filter(FilterMode::Nearest);
@@ -71,34 +77,34 @@ async fn main() {
             println!("⚠️ No se encontró: {}", path);
         }
     }
-
-    // ✅ Cargar audio con rutas corregidas
+    
+    // ✅ Cargar audio (rutas corregidas)
     let mut audio = AudioManager::new();
     
-    match std::fs::read("assets/audio/ambiente/amb_entrada.ogg") {  // ✅ SIN ../
+    match std::fs::read("assets/audio/ambiente/amb_entrada.ogg") {
         Ok(bytes) => audio.set_fallback(&bytes).await,
         Err(e) => println!("⚠️ Error fallback audio: {:?}", e),
     }
     
-    match std::fs::read("assets/audio/efectos/fx_transicion.wav") {  // ✅ SIN ../
+    match std::fs::read("assets/audio/efectos/fx_transicion.wav") {
         Ok(bytes) => audio.agregar_efecto("transicion", &bytes).await,
         Err(e) => println!("⚠️ Error efecto transicion: {:?}", e),
     }
     
-    match std::fs::read("assets/audio/efectos/fx_boton.wav") {  // ✅ SIN ../
+    match std::fs::read("assets/audio/efectos/fx_boton.wav") {
         Ok(bytes) => audio.agregar_efecto("boton", &bytes).await,
         Err(e) => println!("⚠️ Error efecto boton: {:?}", e),
     }
-
+    
     for escena in Escena::TODAS {
-        match std::fs::read("assets/audio/ambiente/amb_entrada.ogg") {  // ✅ SIN ../
+        match std::fs::read("assets/audio/ambiente/amb_entrada.ogg") {
             Ok(bytes) => audio.agregar_ambiente(*escena, &bytes).await,
             Err(e) => println!("⚠️ Error ambiente {:?}: {:?}", escena, e),
         }
     }
-
-    // ✅ Cargar texturas de guías (RUTAS CORREGIDAS)
-    let textura_eli = std::fs::read("assets/guias/guiaEli.png")  // ✅ SIN ../
+    
+    // ✅ Cargar texturas de guías (rutas corregidas)
+    let textura_eli = std::fs::read("assets/guias/guiaEli.png")
         .ok()
         .map(|bytes| {
             let tex = Texture2D::from_file_with_format(&bytes, Some(ImageFormat::Png));
@@ -106,8 +112,8 @@ async fn main() {
             println!("✅ Guía Eli cargada");
             tex
         });
-
-    let textura_ani = std::fs::read("assets/guias/guiaAni.png")  // ✅ SIN ../
+    
+    let textura_ani = std::fs::read("assets/guias/guiaAni.png")
         .ok()
         .map(|bytes| {
             let tex = Texture2D::from_file_with_format(&bytes, Some(ImageFormat::Png));
@@ -115,48 +121,56 @@ async fn main() {
             println!("✅ Guía Ani cargada");
             tex
         });
-
+    
     // ✅ UNA SOLA INSTANCIA DE UiRenderer (con iconos de categoría)
     let ui = UiRenderer::new(font, textura_eli, textura_ani, iconos_categoria);
     
     let mut estado = Estado::new(&db);
     estado.duracion_transicion = (audio.duracion_transicion() + 0.2)
         .max(config::TRANSITION_MIN);
-
+    
     audio.iniciar_ambiente(estado.escena);
-
+    
     println!("🎮 Zoo Pixel iniciado correctamente");
     println!("📍 Escena inicial: {:?}", estado.escena);
-
+    
     loop {
         let dt = get_frame_time().min(0.1);
         
+        // Input PC
         for accion in input::leer_teclado() {
+            estado.procesar_accion(accion, &db);
+        }
+        
+        // ✅ Input Android (táctil)
+        for accion in input::leer_tactil(&estado) {
             estado.procesar_accion(accion, &db);
         }
         
         estado.update(dt);
         audio.update(dt);
-
+        
         let (vol_m, vol_e) = if matches!(estado.pantalla, Pantalla::Config) {
             (estado.menu_config.volumen_musica, estado.menu_config.volumen_efectos)
         } else {
             (estado.save.config.volumen_musica, estado.save.config.volumen_efectos)
         };
+        
         audio.set_volumen_musica(vol_m);
         audio.set_volumen_efectos(vol_e);
-
+        
         if let Some(destino) = estado.necesita_transicion_audio.take() {
             audio.transicionar_a(destino);
         }
+        
         if estado.necesita_sonido_animal {
             estado.necesita_sonido_animal = false;
             audio.efecto_unico("boton");
         }
-
+        
         // ✅ Renderizar UI con fondos
         ui.render(&estado, &fondos);
-
+        
         // ✅ Overlay de controles en PC
         let mostrar_overlay_pc = estado.mostrar_overlay
             && !cfg!(target_os = "android")
@@ -168,13 +182,14 @@ async fn main() {
         if mostrar_overlay_pc {
             render_pc_overlay(&estado, &ui.font);
         }
-
+        
         // ✅ Filtro CRT
         let crt_activo = if matches!(estado.pantalla, Pantalla::Config) {
             estado.menu_config.crt
         } else {
             estado.save.config.crt
         };
+        
         if crt_activo {
             render_crt();
         }
@@ -193,21 +208,22 @@ fn render_pc_overlay(estado: &Estado, font: &Font) {
     let shadow_offset = (1.5 * s).max(1.0);
     let pad_x = 10.0 * s;
     let pad_y = 5.0 * s;
-
+    
     let indicators: &[(&str, f32)] = &[
         ("Z", estado.indicador_z_pressed),
         ("X", estado.indicador_x_pressed),
         ("M", 0.0),
         ("L", 0.0),
     ];
+    
     let total_w: f32 = indicators.iter().map(|(k, _)| {
         measure_text(&format!("[{}]", k), Some(font), fs, 1.0).width + gap
     }).sum::<f32>() - gap;
-
+    
     let th = config::text_height(font, fs);
     let group_x = (sw - total_w) / 2.0;
     let text_y = sh - margin;
-
+    
     draw_rectangle(
         group_x - pad_x,
         text_y - th - pad_y,
@@ -215,12 +231,13 @@ fn render_pc_overlay(estado: &Estado, font: &Font) {
         th + pad_y * 2.0,
         Color::new(0.15, 0.15, 0.15, 0.6),
     );
-
+    
     let mut x = group_x;
     for (key, pressed) in indicators {
         let texto = format!("[{}]", key);
         let tw = measure_text(&texto, Some(font), fs, 1.0).width;
         let color = if *pressed > 0.0 { config::COLOR_ACCENT } else { WHITE };
+        
         draw_text_ex(
             &texto,
             x + shadow_offset,
@@ -232,6 +249,7 @@ fn render_pc_overlay(estado: &Estado, font: &Font) {
                 ..Default::default()
             },
         );
+        
         draw_text_ex(
             &texto,
             x,
@@ -243,6 +261,7 @@ fn render_pc_overlay(estado: &Estado, font: &Font) {
                 ..Default::default()
             },
         );
+        
         x += tw + gap;
     }
 }
@@ -252,6 +271,7 @@ fn render_crt() {
     let sh = screen_height();
     let gap = (sh / 200.0).max(2.0).min(4.0);
     let mut y = 0.0;
+    
     while y < sh {
         draw_rectangle(0.0, y, sw, 1.0, Color::new(0.0, 0.0, 0.0, 0.15));
         y += gap;
