@@ -203,20 +203,20 @@ impl Escena {
 
 
 
-    pub fn icono_categoria(&self) -> &'static str {
+pub fn icono_categoria(&self) -> &'static str {
     match self {
-        // ✅ ESPECÍFICOS PRIMERO (evita unreachable patterns)
-        Self::Z5_1 => "fosiles",                    // Museo (específico)
-        Self::Z3_5 | Self::Z4_2 => "anfibios",      // Específico antes de mamiferos
+        // ✅ ESPECÍFICOS PRIMERO (antes que los generales)
+        Self::Z5_1 => "fosiles",
+        Self::Z3_5 | Self::Z4_2 => "anfibios",
         Self::Z3_2 => "insectos",
+        Self::Z2_3 | Self::Z3_1 | Self::Z3_4 | Self::Z4_1 | Self::Z4_3 => "primates",
         
         // ✅ LUEGO LOS GENERALES
-        Self::Z2_3 | Self::Z3_1 | Self::Z3_4 | Self::Z4_1 | Self::Z4_3 => "primates",
-        Self::Z1_4 | Self::Z5_4 => "reptiles",      // Z4_1 y Z5_1 ya cubiertos arriba
+        Self::Z1_4 | Self::Z5_4 => "reptiles",
         Self::Z1_3 | Self::Z4_5 => "peces",
         Self::Z1_2 | Self::Z2_2 | Self::Z3_3 | Self::Z4_4 | Self::Z5_3 | Self::Z5_5 => "aves",
         
-        // ✅ DEFAULT (mamiferos) al final
+        // ✅ DEFAULT AL FINAL
         Self::Z1_1 | Self::Z1_5 | Self::Z2_1 | Self::Z2_5 | 
         Self::Z4_2 | Self::Z4_3 | Self::Z5_2 => "mamiferos",
         
