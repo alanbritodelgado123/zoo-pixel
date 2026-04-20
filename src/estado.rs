@@ -123,8 +123,9 @@ pub struct Estado {
     pub necesita_sonido_animal: bool, pub necesita_transicion_audio: Option<Escena>,
     pub libreta_seleccion: usize, pub libreta_info: Option<AnimalInfo>,
     pub info_overlay: Option<AnimalInfo>,
-    pub ya_vio_intro: bool,  // ✅ NUEVO: Controla si ya vio la intro
-    pub dialogo_callejon_mostrado: HashSet<String>,  // ✅ NUEVO: Diálogos de callejones
+    pub ya_vio_intro: bool,
+    pub dialogo_callejon_mostrado: HashSet<String>,
+    pub dialogo_museo_ani_mostrado: bool,
 }
 
 impl Estado {
@@ -134,7 +135,7 @@ impl Estado {
         let escena = save.escena.unwrap_or(Escena::E);
         visitadas.insert(escena);
         
-        // ✅ NUEVO: Verificar si ya vio la intro (si tiene animales vistos o zonas visitadas)
+        // ✅ Verificar si ya vio la intro
         let ya_vio_intro = save.animales_vistos.len() > 0 || save.visitadas.len() > 1;
         
         let menu_config = MenuConfig::new(&save);
@@ -158,8 +159,9 @@ impl Estado {
             mapa_cursor: escena, indicador_z_pressed: 0.0, indicador_x_pressed: 0.0,
             necesita_sonido_animal: false, necesita_transicion_audio: None,
             libreta_seleccion: 0, libreta_info: None, info_overlay: None,
-            ya_vio_intro,  // ✅ NUEVO
-            dialogo_callejon_mostrado: HashSet::new(),  // ✅ NUEVO
+            ya_vio_intro,
+            dialogo_callejon_mostrado: HashSet::new(),
+            dialogo_museo_ani_mostrado: false,
         }
     }
     
@@ -179,7 +181,7 @@ impl Estado {
         || self.libreta_info.is_some() || self.info_overlay.is_some()
     }
     
-    pub fn update(&mut self, dt: f32, db: &ZooDB) {  // ✅ NUEVO: Recibe db
+    pub fn update(&mut self, dt: f32, db: &ZooDB) {
         self.plataforma.update();
         if self.indicador_z_pressed > 0.0 { self.indicador_z_pressed -= dt * 3.0; }
         if self.indicador_x_pressed > 0.0 { self.indicador_x_pressed -= dt * 3.0; }
@@ -192,7 +194,7 @@ impl Estado {
                 self.dialogo.update(dt);
                 if !self.dialogo.activo && self.dialogo.completado {
                     self.pantalla = Pantalla::Juego;
-                    self.ya_vio_intro = true;  // ✅ NUEVO: Marcar como vista
+                    self.ya_vio_intro = true;
                     self.guardar_estado();
                 }
             }
@@ -201,7 +203,7 @@ impl Estado {
                 self.eventos.bloqueado = self.eventos_deben_bloquearse();
                 self.eventos.update(dt, &self.escena);
                 
-                // ✅ NUEVO: Verificar diálogos de callejones (Zx-5)
+                // ✅ Verificar diálogos de callejones (Zx-5)
                 self.verificar_dialogo_callejon(db);
                 
                 if let Some(ref mut t) = self.transicion {
@@ -229,13 +231,12 @@ impl Estado {
         }
     }
     
-    // ✅ NUEVO: Verificar si debe mostrar diálogo de callejón
+    // ✅ Verificar si debe mostrar diálogo de callejón
     fn verificar_dialogo_callejon(&mut self, db: &ZooDB) {
         let escena_id = self.escena.db_id();
         if escena_id.ends_with("_5") && !self.dialogo.activo {
             let clave = format!("callejon_{}", escena_id);
             if !self.dialogo_callejon_mostrado.contains(&clave) {
-                // Mostrar diálogo de callejón
                 let dialogos = guia::dialogos_callejon_db(db, escena_id);
                 if !dialogos.is_empty() {
                     self.dialogo.iniciar_desde_db(dialogos);
@@ -275,10 +276,10 @@ impl Estado {
         self.save.guardar();
     }
     
+    // ✅ Cerrar minijuegos al cambiar de zona
     pub fn cambiar_escena(&mut self, destino: Escena) {
         if destino == self.escena { return; }
         
-        // ✅ NUEVO: Cerrar minijuegos si cambiamos de zona
         if self.escena.es_pesca() && !destino.es_pesca() {
             self.pesca.cerrar();
         }
@@ -315,7 +316,6 @@ impl Estado {
                 if self.dialogo.activo {
                     if accion == Accion::BotonA || accion == Accion::BotonB {
                         self.dialogo.avanzar();
-                        // ✅ NUEVO: Si completó diálogo y es intro, cambiar a Juego
                         if !self.dialogo.activo && self.dialogo.completado && !self.ya_vio_intro {
                             self.pantalla = Pantalla::Juego;
                             self.ya_vio_intro = true;
@@ -591,15 +591,14 @@ impl Estado {
             ModoVista::Normal => {
                 match accion {
                     Accion::BotonA => {
-                        // ✅ NUEVO: Diálogo de Ani al entrar al museo por primera vez
+                        // ✅ Diálogo de Ani al entrar al museo por primera vez
                         if self.escena.es_museo() && !self.museo.activo {
-                            let ya_vio_museo = self.dialogo_callejon_mostrado.contains("museo_ani");
-                            if !ya_vio_museo {
+                            if !self.dialogo_museo_ani_mostrado {
                                 let dialogos = guia::dialogos_museo_ani_db(db);
                                 if !dialogos.is_empty() {
                                     self.dialogo.iniciar_desde_db(dialogos);
-                                    self.dialogo_callejon_mostrado.insert("museo_ani".to_string());
-                                    return;  // ✅ Mostrar diálogo antes de entrar
+                                    self.dialogo_museo_ani_mostrado = true;
+                                    return;
                                 }
                             }
                             self.museo.iniciar();
@@ -607,7 +606,7 @@ impl Estado {
                         }
                         
                         if self.escena.es_pesca() {
-                            self.pesca.iniciar(db);  // ✅ Pasar DB
+                            self.pesca.iniciar(db);
                             return;
                         }
                         if self.escena.es_entrada() { return; }

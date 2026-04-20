@@ -81,11 +81,7 @@ impl AudioManager {
 
     pub fn duracion_transicion(&self) -> f32 {
         let dur = self.duracion_efecto("transicion");
-        if dur > 0.1 {
-            dur
-        } else {
-            0.5
-        }
+        if dur > 0.1 { dur } else { 0.5 }
     }
 
     pub fn set_volumen_musica(&mut self, vol: f32) {
@@ -250,32 +246,21 @@ enum AccionAudio {
 }
 
 fn duracion_wav(bytes: &[u8]) -> Option<f32> {
-    if bytes.len() < 44 {
-        return None;
-    }
-    if &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WAVE" {
-        return None;
-    }
+    if bytes.len() < 44 { return None; }
+    if &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WAVE" { return None; }
     let byte_rate = u32::from_le_bytes([bytes[28], bytes[29], bytes[30], bytes[31]]);
-    if byte_rate == 0 {
-        return None;
-    }
+    if byte_rate == 0 { return None; }
     let mut pos = 12;
     while pos + 8 <= bytes.len() {
         let chunk_id = &bytes[pos..pos + 4];
         let chunk_size = u32::from_le_bytes([
-            bytes[pos + 4],
-            bytes[pos + 5],
-            bytes[pos + 6],
-            bytes[pos + 7],
+            bytes[pos + 4], bytes[pos + 5], bytes[pos + 6], bytes[pos + 7],
         ]);
         if chunk_id == b"data" {
             return Some(chunk_size as f32 / byte_rate as f32);
         }
         pos += 8 + chunk_size as usize;
-        if pos % 2 != 0 {
-            pos += 1;
-        }
+        if pos % 2 != 0 { pos += 1; }
     }
     None
 }

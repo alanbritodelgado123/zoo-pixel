@@ -39,15 +39,15 @@ fn window_conf() -> Conf {
 async fn main() {
     let db = ZooDB::new();
 
-    // ✅ FUENTE: include_bytes!
+    // ✅ FUENTE
     let font_bytes = include_bytes!("../assets/fonts/PressStart2P.ttf");
     let font = load_ttf_font_from_bytes(font_bytes).expect("No se pudo cargar la fuente");
 
-    // ✅ SPRITESHEET: include_bytes!
+    // ✅ SPRITESHEET
     let spritesheet_bytes = include_bytes!("../assets/fondos/spritesheet_vertical.png");
     let fondos = Fondos::new(spritesheet_bytes, 640.0, 480.0);
 
-    // ✅ ÍCONOS DE CATEGORÍA: Cargar CADA UNO individualmente
+    // ✅ ÍCONOS DE CATEGORÍA
     let mut iconos_categoria: HashMap<String, Texture2D> = HashMap::new();
 
     let bytes_anfibios = include_bytes!("../assets/categorias/anfibios_inspyrenet.png");
@@ -98,7 +98,7 @@ async fn main() {
     iconos_categoria.insert("reptiles".to_string(), tex);
     println!("✅ Icono cargado: reptiles");
 
-    // ✅ AUDIO: include_bytes!
+    // ✅ AUDIO
     let mut audio = AudioManager::new();
     audio.set_fallback(include_bytes!("../assets/audio/ambiente/amb_entrada.ogg")).await;
     audio.agregar_efecto("transicion", include_bytes!("../assets/audio/efectos/fx_transicion.wav")).await;
@@ -159,7 +159,7 @@ async fn main() {
             estado.procesar_accion(accion, &db);
         }
 
-        estado.update(dt, &db);  // ✅ NUEVO: Pasa db a update
+        estado.update(dt, &db);
 
         audio.update(dt);
 
@@ -180,7 +180,7 @@ async fn main() {
             audio.efecto_unico("boton");
         }
 
-        ui.render(&estado, &fondos);
+        ui.render(&estado, &fondos, &audio);
 
         // Overlay de controles en PC
         let mostrar_overlay_pc = estado.mostrar_overlay

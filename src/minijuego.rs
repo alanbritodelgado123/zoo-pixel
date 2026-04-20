@@ -79,28 +79,26 @@ impl MinijuegoPesca {
     }
     
     // ✅ CORREGIDO: Obtiene peces reales de la DB
-    fn generar_pez(&self, db: &ZooDB) -> PezInfo {
-        // ✅ OBTENER PECES REALES DE LA DB (categoría "peces")
-        let peces_db = db.animales_por_categoria("peces");
-        
-        if peces_db.is_empty() {
-            // Fallback si DB está vacía
-            return PezInfo {
-                nombre: "Pavón".into(),
-                cientifico: "Cichla temensis".into(),
-                descripcion: "Depredador de agua dulce, puede pesar hasta 15 kg.".into(),
-                peso_kg: 5.0,
-            };
-        }
-        
-        let animal = &peces_db[gen_range(0, peces_db.len())];
-        PezInfo {
-            nombre: animal.nombre_comun.clone(),
-            cientifico: animal.nombre_cientifico.clone(),
-            descripcion: animal.descripcion.clone(),
-            peso_kg: gen_range(2.0, 20.0),
-        }
+fn generar_pez(&self, db: &ZooDB) -> PezInfo {
+    let peces_db = db.animales_por_categoria("peces");
+    
+    if peces_db.is_empty() {
+        return PezInfo {
+            nombre: "Pavón".into(),
+            cientifico: "Cichla temensis".into(),
+            descripcion: "Depredador de agua dulce.".into(),
+            peso_kg: 5.0,
+        };
     }
+    
+    let animal = &peces_db[gen_range(0, peces_db.len())];
+    PezInfo {
+        nombre: animal.nombre_comun.clone(),
+        cientifico: animal.nombre_cientifico.clone(),
+        descripcion: animal.descripcion.clone(),
+        peso_kg: gen_range(2.0, 20.0),
+    }
+}
     
     pub fn update(&mut self, dt: f32) {
         if !self.activo { return; }
@@ -312,12 +310,12 @@ impl MinijuegoMuseo {
         ]
     }
     
-    pub fn iniciar(&mut self) {
-        self.activo = true;
-        self.fase = FaseMuseo::Entrada;
-        self.indice = 0;
-        self.quiz_puntaje = 0;
-    }
+pub fn iniciar(&mut self, db: &ZooDB) {
+    self.activo = true;
+    self.intentos = 0;
+    self.peces_atrapados.clear();
+    self.preparar_ronda(db);
+}
     
     pub fn entrar_explorando(&mut self) {
         self.fase = FaseMuseo::Explorando;

@@ -155,12 +155,12 @@ pub fn dialogos_museo_db(db: &ZooDB) -> Vec<DialogoDB> {
     db.dialogos_museo()
 }
 
-// ✅ NUEVA FUNCIÓN: Diálogos de Ani para el museo (primera vez)
+// ✅ NUEVA: Diálogos de Ani para el museo (primera vez)
 pub fn dialogos_museo_ani_db(db: &ZooDB) -> Vec<DialogoDB> {
     db.dialogos_por_contexto("museo_bienvenida")
 }
 
-// ✅ NUEVA FUNCIÓN: Diálogos de callejones (Zx-5)
+// ✅ NUEVA: Diálogos de callejones (Zx-5)
 pub fn dialogos_callejon_db(db: &ZooDB, escena_id: &str) -> Vec<DialogoDB> {
     let contexto = format!("callejon_{}", escena_id);
     db.dialogos_por_contexto(&contexto)

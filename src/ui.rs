@@ -5,6 +5,7 @@ use crate::config::*;
 use crate::estado::*;
 use crate::escena::Escena;
 use crate::fondo::Fondos;
+use crate::audio::AudioManager;
 
 pub struct UiRenderer {
     pub font: Font,
@@ -12,6 +13,7 @@ pub struct UiRenderer {
     textura_eli: Option<Texture2D>,
     textura_ani: Option<Texture2D>,
     iconos_categoria: HashMap<String, Texture2D>,
+    grito_reproducido: Cell<bool>,
 }
 
 impl UiRenderer {
@@ -27,10 +29,11 @@ impl UiRenderer {
             textura_eli,
             textura_ani,
             iconos_categoria,
+            grito_reproducido: Cell::new(false),
         }
     }
 
-    pub fn render(&self, estado: &Estado, fondos: &Fondos) {
+    pub fn render(&self, estado: &Estado, fondos: &Fondos, audio: &AudioManager) {
         self.es_movil.set(estado.plataforma.es_movil());
         match estado.pantalla {
             Pantalla::Inicio => self.render_inicio(estado),
@@ -38,7 +41,7 @@ impl UiRenderer {
             Pantalla::Config => self.render_config(estado),
             Pantalla::MapaCompleto => self.render_mapa_completo(estado),
             Pantalla::LibretaCompleta => self.render_libreta(estado),
-            Pantalla::Juego => self.render_juego(estado, fondos),
+            Pantalla::Juego => self.render_juego(estado, fondos, audio),
         }
     }
 
@@ -216,7 +219,6 @@ impl UiRenderer {
         draw_triangle(points[0], points[1], points[2], WHITE);
     }
 
-    // ✅ FUNCIÓN CENTRALIZADA DE INFO - Reutilizable en todas las pantallas
     fn render_info_animal(
         &self,
         nombre: &str,
@@ -228,6 +230,7 @@ impl UiRenderer {
         bottom: f32,
         hint_z: &str,
         categoria: &str,
+        audio: &AudioManager,
     ) {
         let sw = screen_width();
         draw_rectangle(0.0, top, sw, bottom - top, COLOR_BG_DARK);
@@ -239,7 +242,7 @@ impl UiRenderer {
         draw_rectangle(img_x, img_y, img_w, img_h, COLOR_BG_ALT);
         draw_rectangle_lines(img_x, img_y, img_w, img_h, 1.0, COLOR_BORDER);
 
-        // ✅ ÍCONO DE CATEGORÍA COMO PLACEHOLDER (si no hay foto dedicada)
+        // ✅ ÍCONO DE CATEGORÍA COMO PLACEHOLDER
         let mut icono_dibujado = false;
         let categoria_lower = categoria.to_lowercase();
         if let Some(icono_tex) = self.iconos_categoria.get(&categoria_lower) {
@@ -324,6 +327,12 @@ impl UiRenderer {
             fs_desc,
             COLOR_GREEN,
         );
+
+        // ✅ REPRODUCIR GRITO CUANDO TEXTO COMPLETADO
+        if terminado && !self.grito_reproducido.get() && !categoria.is_empty() {
+            audio.reproducir_grito_categoria(categoria);
+            self.grito_reproducido.set(true);
+        }
 
         let hint = if terminado {
             format!("{}  X: Volver", hint_z)
@@ -632,17 +641,8 @@ impl UiRenderer {
         let sh = screen_height();
         let st = safe_top();
         if let Some(ref info) = estado.libreta_info {
-            self.render_info_animal(
-                &info.nombre_comun,
-                &info.nombre_cientifico,
-                &info.descripcion,
-                info.texto_pos,
-                info.terminado,
-                st,
-                sh,
-                "Z: Cerrar",
-                &info.categoria,
-            );
+            // Resetear grito al entrar
+            self.grito_reproducido.set(false);
             return;
         }
         let titulo = "Libreta de Campo";
@@ -746,7 +746,7 @@ impl UiRenderer {
         self.render_hint("Z: Ver  Flechas: Navegar  X: Cerrar", sh - 10.0);
     }
 
-    fn render_juego(&self, estado: &Estado, fondos: &Fondos) {
+    fn render_juego(&self, estado: &Estado, fondos: &Fondos, audio: &AudioManager) {
         let sw = screen_width();
         let sh = screen_height();
         let bar_h = bar_height();
@@ -766,6 +766,7 @@ impl UiRenderer {
                 sh,
                 "Z: Continuar",
                 &info.categoria,
+                audio,
             );
             return;
         }
@@ -784,6 +785,7 @@ impl UiRenderer {
                 terminado,
                 ..
             } => {
+                self.grito_reproducido.set(false);
                 self.render_info_animal(
                     &animal.nombre_comun,
                     &animal.nombre_cientifico,
@@ -794,6 +796,7 @@ impl UiRenderer {
                     sh,
                     "Z: Sonido",
                     &animal.categoria,
+                    audio,
                 );
             }
             ModoVista::Foto {
@@ -808,6 +811,7 @@ impl UiRenderer {
             } => {
                 if *foto_tomada {
                     let a = &animales[*indice_actual];
+                    self.grito_reproducido.set(false);
                     self.render_info_animal(
                         &a.nombre_comun,
                         &a.nombre_cientifico,
@@ -818,6 +822,7 @@ impl UiRenderer {
                         sh,
                         "Z: Siguiente",
                         &a.categoria,
+                        audio,
                     );
                 } else {
                     self.render_foto_grid(animales, *indice_actual, *celda, ya_vistos, content_top, sh);
@@ -1109,7 +1114,7 @@ impl UiRenderer {
     }
 
     fn render_museo(&self, estado: &Estado, content_top: f32, content_bottom: f32) {
-        use crate::minijuego::FaseMuseo;
+        use crate::minijuego::{FaseMuseo, CeldaExcavacion};
         let sw = screen_width();
         let museo = &estado.museo;
         draw_rectangle(0.0, content_top, sw, content_bottom - content_top, COLOR_BG_DARK);
