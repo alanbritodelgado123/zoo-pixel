@@ -58,7 +58,6 @@ pub struct Transicion {
     pub destino: Escena, pub timer: f32, pub duracion: f32, pub cambiada: bool,
 }
 
-// ✅ CORREGIDO: Añadido campo 'categoria'
 pub struct AnimalInfo {
     pub nombre_comun: String,
     pub nombre_cientifico: String,
@@ -70,7 +69,6 @@ pub struct AnimalInfo {
 }
 
 impl AnimalInfo {
-    // ✅ CORREGIDO: Incluye categoria
     pub fn from_animal(a: &Animal) -> Self {
         Self {
             nombre_comun: a.nombre_comun.clone(),
@@ -80,7 +78,6 @@ impl AnimalInfo {
             categoria: a.categoria.clone(),
         }
     }
-    // ✅ CORREGIDO: Usa e.cientifico (no e.nombre_cientifico) y e.categoria
     pub fn from_libreta(e: &crate::libreta::EntradaLibreta) -> Self {
         Self {
             nombre_comun: e.nombre.clone(),
@@ -126,6 +123,8 @@ pub struct Estado {
     pub necesita_sonido_animal: bool, pub necesita_transicion_audio: Option<Escena>,
     pub libreta_seleccion: usize, pub libreta_info: Option<AnimalInfo>,
     pub info_overlay: Option<AnimalInfo>,
+    pub ya_vio_intro: bool,  // ✅ NUEVO: Controla si ya vio la intro
+    pub dialogo_callejon_mostrado: HashSet<String>,  // ✅ NUEVO: Diálogos de callejones
 }
 
 impl Estado {
@@ -134,6 +133,10 @@ impl Estado {
         let mut visitadas = save.visitadas.clone();
         let escena = save.escena.unwrap_or(Escena::E);
         visitadas.insert(escena);
+        
+        // ✅ NUEVO: Verificar si ya vio la intro (si tiene animales vistos o zonas visitadas)
+        let ya_vio_intro = save.animales_vistos.len() > 0 || save.visitadas.len() > 1;
+        
         let menu_config = MenuConfig::new(&save);
         let mut libreta = Libreta::new();
         for nombre in &save.animales_vistos {
@@ -141,8 +144,10 @@ impl Estado {
                 libreta.registrar_animal(&animal);
             }
         }
+        
         Self {
-            pantalla: Pantalla::Inicio, escena, visitadas, transicion: None,
+            pantalla: if ya_vio_intro { Pantalla::Juego } else { Pantalla::Inicio },
+            escena, visitadas, transicion: None,
             duracion_transicion: config::TRANSITION_SECS_FALLBACK,
             modo: ModoVista::Normal, mostrar_overlay: false,
             dialogo: SistemaDialogo::new(), eventos: SistemaEventos::new(),
@@ -153,9 +158,11 @@ impl Estado {
             mapa_cursor: escena, indicador_z_pressed: 0.0, indicador_x_pressed: 0.0,
             necesita_sonido_animal: false, necesita_transicion_audio: None,
             libreta_seleccion: 0, libreta_info: None, info_overlay: None,
+            ya_vio_intro,  // ✅ NUEVO
+            dialogo_callejon_mostrado: HashSet::new(),  // ✅ NUEVO
         }
     }
-
+    
     fn eventos_deben_bloquearse(&self) -> bool {
         matches!(self.pantalla,
             Pantalla::MapaCompleto | Pantalla::LibretaCompleta | Pantalla::Config |
@@ -163,21 +170,21 @@ impl Estado {
         ) || self.dialogo.activo || self.pesca.activo || self.museo.activo
         || !matches!(self.modo, ModoVista::Normal) || self.en_transicion()
     }
-
+    
     pub fn en_pantalla_info(&self) -> bool {
         matches!(self.modo, ModoVista::ViendoAnimal { .. })
-            || matches!(self.modo, ModoVista::Foto { .. })
-            || matches!(self.modo, ModoVista::Seleccion { .. })
-            || self.pesca.activo || self.museo.activo
-            || self.libreta_info.is_some() || self.info_overlay.is_some()
+        || matches!(self.modo, ModoVista::Foto { .. })
+        || matches!(self.modo, ModoVista::Seleccion { .. })
+        || self.pesca.activo || self.museo.activo
+        || self.libreta_info.is_some() || self.info_overlay.is_some()
     }
-
-    pub fn update(&mut self, dt: f32) {
+    
+    pub fn update(&mut self, dt: f32, db: &ZooDB) {  // ✅ NUEVO: Recibe db
         self.plataforma.update();
         if self.indicador_z_pressed > 0.0 { self.indicador_z_pressed -= dt * 3.0; }
         if self.indicador_x_pressed > 0.0 { self.indicador_x_pressed -= dt * 3.0; }
         self.mostrar_overlay = matches!(self.pantalla, Pantalla::Juego);
-
+        
         match self.pantalla {
             Pantalla::Inicio => { self.inicio_timer += dt; }
             Pantalla::Intro => {
@@ -185,6 +192,7 @@ impl Estado {
                 self.dialogo.update(dt);
                 if !self.dialogo.activo && self.dialogo.completado {
                     self.pantalla = Pantalla::Juego;
+                    self.ya_vio_intro = true;  // ✅ NUEVO: Marcar como vista
                     self.guardar_estado();
                 }
             }
@@ -192,6 +200,10 @@ impl Estado {
                 self.ciclo.update(dt);
                 self.eventos.bloqueado = self.eventos_deben_bloquearse();
                 self.eventos.update(dt, &self.escena);
+                
+                // ✅ NUEVO: Verificar diálogos de callejones (Zx-5)
+                self.verificar_dialogo_callejon(db);
+                
                 if let Some(ref mut t) = self.transicion {
                     t.timer += dt;
                     if t.timer >= t.duracion / 2.0 && !t.cambiada {
@@ -216,7 +228,23 @@ impl Estado {
             }
         }
     }
-
+    
+    // ✅ NUEVO: Verificar si debe mostrar diálogo de callejón
+    fn verificar_dialogo_callejon(&mut self, db: &ZooDB) {
+        let escena_id = self.escena.db_id();
+        if escena_id.ends_with("_5") && !self.dialogo.activo {
+            let clave = format!("callejon_{}", escena_id);
+            if !self.dialogo_callejon_mostrado.contains(&clave) {
+                // Mostrar diálogo de callejón
+                let dialogos = guia::dialogos_callejon_db(db, escena_id);
+                if !dialogos.is_empty() {
+                    self.dialogo.iniciar_desde_db(dialogos);
+                    self.dialogo_callejon_mostrado.insert(clave);
+                }
+            }
+        }
+    }
+    
     fn update_typewriter(&mut self, dt: f32) {
         match &mut self.modo {
             ModoVista::ViendoAnimal { animal, texto_pos, timer, terminado, .. } => {
@@ -240,31 +268,43 @@ impl Estado {
             _ => {}
         }
     }
-
+    
     fn guardar_estado(&mut self) {
         self.save.escena = Some(self.escena);
         self.save.visitadas = self.visitadas.clone();
         self.save.guardar();
     }
-
+    
     pub fn cambiar_escena(&mut self, destino: Escena) {
         if destino == self.escena { return; }
+        
+        // ✅ NUEVO: Cerrar minijuegos si cambiamos de zona
+        if self.escena.es_pesca() && !destino.es_pesca() {
+            self.pesca.cerrar();
+        }
+        if self.escena.es_museo() && !destino.es_museo() {
+            self.museo.cerrar();
+        }
+        
         self.transicion = Some(Transicion {
             destino, timer: 0.0, duracion: self.duracion_transicion, cambiada: false,
         });
         self.necesita_transicion_audio = Some(destino);
     }
+    
     pub fn en_transicion(&self) -> bool { self.transicion.is_some() }
+    
     pub fn alpha_transicion(&self) -> f32 {
         if let Some(ref t) = self.transicion {
             let p = (t.timer / t.duracion).clamp(0.0, 1.0);
             if p < 0.5 { p * 2.0 } else { (1.0 - p) * 2.0 }
         } else { 0.0 }
     }
-
+    
     pub fn procesar_accion(&mut self, accion: Accion, db: &ZooDB) {
         if accion == Accion::BotonA { self.indicador_z_pressed = 1.0; }
         if accion == Accion::BotonB { self.indicador_x_pressed = 1.0; }
+        
         match self.pantalla {
             Pantalla::Inicio => self.input_inicio(accion, db),
             Pantalla::Intro => self.input_intro(accion),
@@ -275,6 +315,12 @@ impl Estado {
                 if self.dialogo.activo {
                     if accion == Accion::BotonA || accion == Accion::BotonB {
                         self.dialogo.avanzar();
+                        // ✅ NUEVO: Si completó diálogo y es intro, cambiar a Juego
+                        if !self.dialogo.activo && self.dialogo.completado && !self.ya_vio_intro {
+                            self.pantalla = Pantalla::Juego;
+                            self.ya_vio_intro = true;
+                            self.guardar_estado();
+                        }
                     }
                     return;
                 }
@@ -314,7 +360,7 @@ impl Estado {
             }
         }
     }
-
+    
     fn input_inicio(&mut self, accion: Accion, db: &ZooDB) {
         match accion {
             Accion::Arriba => { if self.inicio_seleccion > 0 { self.inicio_seleccion -= 1; } }
@@ -331,21 +377,32 @@ impl Estado {
             _ => {}
         }
     }
-
+    
     fn entrar_juego(&mut self, db: &ZooDB) {
-        if self.dialogo.completado { self.pantalla = Pantalla::Juego; }
-        else { self.iniciar_intro(db); }
+        if self.ya_vio_intro {
+            self.pantalla = Pantalla::Juego;
+        } else {
+            self.iniciar_intro(db);
+        }
     }
+    
     fn iniciar_intro(&mut self, db: &ZooDB) {
         self.pantalla = Pantalla::Intro;
         self.intro_timer = 0.0;
         let dialogos = guia::dialogos_bienvenida_db(db, &self.plataforma);
-        if !dialogos.is_empty() { self.dialogo.iniciar_desde_db(dialogos); }
-        else { self.dialogo.iniciar(guia::dialogos_bienvenida(&self.plataforma)); }
+        if !dialogos.is_empty() {
+            self.dialogo.iniciar_desde_db(dialogos);
+        } else {
+            self.dialogo.iniciar(guia::dialogos_bienvenida(&self.plataforma));
+        }
     }
+    
     fn input_intro(&mut self, accion: Accion) {
-        if accion == Accion::BotonA || accion == Accion::BotonB { self.dialogo.avanzar(); }
+        if accion == Accion::BotonA || accion == Accion::BotonB {
+            self.dialogo.avanzar();
+        }
     }
+    
     fn input_config(&mut self, accion: Accion) {
         let mc = &mut self.menu_config;
         let total = MenuConfig::OPCIONES.len();
@@ -371,13 +428,15 @@ impl Estado {
             _ => {}
         }
     }
+    
     fn guardar_config(&mut self) {
         self.save.config.volumen_musica = self.menu_config.volumen_musica;
         self.save.config.volumen_efectos = self.menu_config.volumen_efectos;
         self.save.config.crt = self.menu_config.crt;
         self.save.guardar();
-        self.pantalla = if self.dialogo.completado { Pantalla::Juego } else { Pantalla::Inicio };
+        self.pantalla = if self.ya_vio_intro { Pantalla::Juego } else { Pantalla::Inicio };
     }
+    
     fn input_mapa(&mut self, accion: Accion) {
         match accion {
             Accion::BotonB | Accion::Mapa => { self.pantalla = Pantalla::Juego; }
@@ -396,6 +455,7 @@ impl Estado {
             _ => {}
         }
     }
+    
     fn input_libreta(&mut self, accion: Accion) {
         if let Some(ref mut info) = self.libreta_info {
             match accion {
@@ -414,6 +474,7 @@ impl Estado {
             _ => {}
         }
     }
+    
     fn input_pesca(&mut self, accion: Accion) {
         match accion {
             Accion::BotonA => {
@@ -441,6 +502,7 @@ impl Estado {
             _ => {}
         }
     }
+    
     fn input_museo(&mut self, accion: Accion) {
         match accion {
             Accion::BotonA => {
@@ -521,19 +583,38 @@ impl Estado {
             _ => {}
         }
     }
-
+    
     fn input_juego(&mut self, accion: Accion, db: &ZooDB) {
         if self.en_transicion() { return; }
+        
         match &mut self.modo {
             ModoVista::Normal => {
                 match accion {
                     Accion::BotonA => {
-                        if self.escena.es_museo() { self.museo.iniciar(); return; }
-                        if self.escena.es_pesca() { self.pesca.iniciar(); return; }
+                        // ✅ NUEVO: Diálogo de Ani al entrar al museo por primera vez
+                        if self.escena.es_museo() && !self.museo.activo {
+                            let ya_vio_museo = self.dialogo_callejon_mostrado.contains("museo_ani");
+                            if !ya_vio_museo {
+                                let dialogos = guia::dialogos_museo_ani_db(db);
+                                if !dialogos.is_empty() {
+                                    self.dialogo.iniciar_desde_db(dialogos);
+                                    self.dialogo_callejon_mostrado.insert("museo_ani".to_string());
+                                    return;  // ✅ Mostrar diálogo antes de entrar
+                                }
+                            }
+                            self.museo.iniciar();
+                            return;
+                        }
+                        
+                        if self.escena.es_pesca() {
+                            self.pesca.iniciar(db);  // ✅ Pasar DB
+                            return;
+                        }
                         if self.escena.es_entrada() { return; }
-
+                        
                         let animales = db.animales_zona(&self.escena);
                         if animales.is_empty() { return; }
+                        
                         if self.escena.es_foto() {
                             let idx = gen_range(0, animales.len());
                             let celda = gen_range(0, 4_usize);
@@ -551,7 +632,9 @@ impl Estado {
                         let idx = match dir {
                             Accion::Arriba => 0, Accion::Abajo => 1, Accion::Izquierda => 2, Accion::Derecha => 3, _ => return,
                         };
-                        if let Some(destino) = self.escena.conexiones()[idx] { self.cambiar_escena(destino); }
+                        if let Some(destino) = self.escena.conexiones()[idx] {
+                            self.cambiar_escena(destino);
+                        }
                     }
                 }
             }

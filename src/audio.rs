@@ -81,7 +81,11 @@ impl AudioManager {
 
     pub fn duracion_transicion(&self) -> f32 {
         let dur = self.duracion_efecto("transicion");
-        if dur > 0.1 { dur } else { 0.5 }
+        if dur > 0.1 {
+            dur
+        } else {
+            0.5
+        }
     }
 
     pub fn set_volumen_musica(&mut self, vol: f32) {
@@ -95,8 +99,8 @@ impl AudioManager {
         }
     }
 
-    pub fn set_volumen_efectos(&mut self, vol: f32) { 
-        self.volumen_efectos = vol; 
+    pub fn set_volumen_efectos(&mut self, vol: f32) {
+        self.volumen_efectos = vol;
     }
 
     pub fn update(&mut self, dt: f32) {
@@ -119,7 +123,6 @@ impl AudioManager {
             }
             _ => None,
         };
-
         if let Some(accion) = accion {
             match accion {
                 AccionAudio::TerminarFade => {
@@ -169,7 +172,6 @@ impl AudioManager {
             self.sonido_actual = Some(escena);
             return;
         };
-
         play_sound(sound, PlaySoundParams {
             looped: true,
             volume: self.volumen_musica,
@@ -225,6 +227,17 @@ impl AudioManager {
         }
     }
 
+    // ✅ NUEVO: Reproducir grito por categoría
+    pub fn reproducir_grito_categoria(&self, categoria: &str) {
+        let nombre_efecto = format!("grito_{}", categoria.to_lowercase());
+        if let Some(sound) = self.efectos.get(&nombre_efecto) {
+            play_sound(sound, PlaySoundParams {
+                looped: false,
+                volume: self.volumen_efectos,
+            });
+        }
+    }
+
     pub fn en_transicion(&self) -> bool {
         matches!(self.estado, EstadoAudio::FadeOut { .. } | EstadoAudio::EsperandoTransicion)
     }
@@ -237,21 +250,32 @@ enum AccionAudio {
 }
 
 fn duracion_wav(bytes: &[u8]) -> Option<f32> {
-    if bytes.len() < 44 { return None; }
-    if &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WAVE" { return None; }
+    if bytes.len() < 44 {
+        return None;
+    }
+    if &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WAVE" {
+        return None;
+    }
     let byte_rate = u32::from_le_bytes([bytes[28], bytes[29], bytes[30], bytes[31]]);
-    if byte_rate == 0 { return None; }
+    if byte_rate == 0 {
+        return None;
+    }
     let mut pos = 12;
     while pos + 8 <= bytes.len() {
         let chunk_id = &bytes[pos..pos + 4];
         let chunk_size = u32::from_le_bytes([
-            bytes[pos + 4], bytes[pos + 5], bytes[pos + 6], bytes[pos + 7],
+            bytes[pos + 4],
+            bytes[pos + 5],
+            bytes[pos + 6],
+            bytes[pos + 7],
         ]);
         if chunk_id == b"data" {
             return Some(chunk_size as f32 / byte_rate as f32);
         }
         pos += 8 + chunk_size as usize;
-        if pos % 2 != 0 { pos += 1; }
+        if pos % 2 != 0 {
+            pos += 1;
+        }
     }
     None
 }

@@ -5,7 +5,6 @@ use crate::config::*;
 use crate::estado::*;
 use crate::escena::Escena;
 use crate::fondo::Fondos;
-use crate::minijuego::FasePesca;
 
 pub struct UiRenderer {
     pub font: Font,
@@ -62,7 +61,6 @@ impl UiRenderer {
         draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.5));
         draw_rectangle(box_x, box_y, box_w, box_h, COLOR_DIALOG_BG);
         draw_rectangle_lines(box_x, box_y, box_w, box_h, 2.0, COLOR_BORDER);
-
         if let Some(tex) = self.get_textura_guia(estado.dialogo.personaje_actual()) {
             let max_w = sw * 0.35;
             let max_h = sh * 0.25;
@@ -86,7 +84,6 @@ impl UiRenderer {
                 },
             );
         }
-
         let padding = 10.0;
         let inner_w = box_w - padding * 2.0;
         let personaje = estado.dialogo.personaje_actual();
@@ -103,7 +100,6 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
-
         let texto = estado.dialogo.texto_visible();
         let fs_d = fs_pct(0.024);
         let text_top = box_y + padding + th_p + 6.0;
@@ -134,7 +130,6 @@ impl UiRenderer {
                 },
             );
         }
-
         if estado.dialogo.terminado_linea {
             draw_text_ex(
                 "▼",
@@ -221,6 +216,7 @@ impl UiRenderer {
         draw_triangle(points[0], points[1], points[2], WHITE);
     }
 
+    // ✅ FUNCIÓN CENTRALIZADA DE INFO - Reutilizable en todas las pantallas
     fn render_info_animal(
         &self,
         nombre: &str,
@@ -243,6 +239,7 @@ impl UiRenderer {
         draw_rectangle(img_x, img_y, img_w, img_h, COLOR_BG_ALT);
         draw_rectangle_lines(img_x, img_y, img_w, img_h, 1.0, COLOR_BORDER);
 
+        // ✅ ÍCONO DE CATEGORÍA COMO PLACEHOLDER (si no hay foto dedicada)
         let mut icono_dibujado = false;
         let categoria_lower = categoria.to_lowercase();
         if let Some(icono_tex) = self.iconos_categoria.get(&categoria_lower) {
@@ -879,6 +876,7 @@ impl UiRenderer {
         );
     }
 
+    // ✅ HINTS ESPECÍFICOS POR ZONA
     fn render_normal(&self, estado: &Estado, content_top: f32, content_bottom: f32) {
         let sw = screen_width();
         let mid_y = (content_top + content_bottom) / 2.0;
@@ -904,7 +902,17 @@ impl UiRenderer {
             self.draw_arrow_triangle(cx, mid_y, 3, arrow_size);
         }
         if !estado.escena.es_entrada() {
-            self.render_hint("Z: Explorar", content_bottom - 5.0);
+            // ✅ HINT ESPECÍFICO POR ZONA
+            let hint = if estado.escena.es_pesca() {
+                "Z: Pescar"
+            } else if estado.escena.es_museo() {
+                "Z: Explorar Museo"
+            } else if estado.escena.es_foto() {
+                "Z: Modo Foto"
+            } else {
+                "Z: Explorar"
+            };
+            self.render_hint(hint, content_bottom - 5.0);
         }
     }
 
@@ -1101,7 +1109,7 @@ impl UiRenderer {
     }
 
     fn render_museo(&self, estado: &Estado, content_top: f32, content_bottom: f32) {
-        use crate::minijuego::{FaseMuseo, CeldaExcavacion};
+        use crate::minijuego::FaseMuseo;
         let sw = screen_width();
         let museo = &estado.museo;
         draw_rectangle(0.0, content_top, sw, content_bottom - content_top, COLOR_BG_DARK);

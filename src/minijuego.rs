@@ -1,6 +1,7 @@
 use macroquad::prelude::*;
 use macroquad::rand::gen_range;
 use crate::config;
+use crate::db::ZooDB;
 
 // =====================================================================
 //  PESCA (Acuario) - En P5, mismos animales que Z5-2
@@ -55,81 +56,52 @@ impl MinijuegoPesca {
             texto_terminado: false,
         }
     }
-
-    pub fn iniciar(&mut self) {
+    
+    // ✅ NUEVO: Recibe DB para obtener peces reales
+    pub fn iniciar(&mut self, db: &ZooDB) {
         self.activo = true;
         self.intentos = 0;
         self.peces_atrapados.clear();
-        self.preparar_ronda();
+        self.preparar_ronda(db);
     }
-
-    fn preparar_ronda(&mut self) {
+    
+    // ✅ NUEVO: Recibe DB para obtener peces reales
+    fn preparar_ronda(&mut self, db: &ZooDB) {
         self.fase = FasePesca::Esperando;
         self.timer = 0.0;
         self.tiempo_espera = gen_range(2.5, 5.0);
         self.tiempo_picada = gen_range(1.8, 3.5);
-        self.pez_actual = Some(self.generar_pez());
+        self.pez_actual = Some(self.generar_pez(db));
         self.exito = false;
         self.texto_pos = 0;
         self.texto_timer = 0.0;
         self.texto_terminado = false;
     }
-
-fn generar_pez(&self) -> PezInfo {
-    // ✅ SOLO PECES REALES DE AGUAS VENEZOLANAS
-    let peces = vec![
+    
+    // ✅ CORREGIDO: Obtiene peces reales de la DB
+    fn generar_pez(&self, db: &ZooDB) -> PezInfo {
+        // ✅ OBTENER PECES REALES DE LA DB (categoría "peces")
+        let peces_db = db.animales_por_categoria("peces");
+        
+        if peces_db.is_empty() {
+            // Fallback si DB está vacía
+            return PezInfo {
+                nombre: "Pavón".into(),
+                cientifico: "Cichla temensis".into(),
+                descripcion: "Depredador de agua dulce, puede pesar hasta 15 kg.".into(),
+                peso_kg: 5.0,
+            };
+        }
+        
+        let animal = &peces_db[gen_range(0, peces_db.len())];
         PezInfo {
-            nombre: "Pavón".into(),
-            cientifico: "Cichla temensis".into(),
-            descripcion: "Depredador de agua dulce, puede pesar hasta 15 kg. Muy combativo al ser pescado. Color verde-dorado con manchas oscuras características.".into(),
-            peso_kg: gen_range(3.0, 15.0),
-        },
-        PezInfo {
-            nombre: "Pez Loro".into(),
-            cientifico: "Scarus guacamaia".into(),
-            descripcion: "Pez loro más grande del Atlántico, hasta 1.2 metros. Se alimenta de coral y algas. Colorido con tonos verdes, azules y rosados.".into(),
-            peso_kg: gen_range(5.0, 20.0),
-        },
-        PezInfo {
-            nombre: "Mero".into(),
-            cientifico: "Epinephelus itajara".into(),
-            descripcion: "Pez de arrecife de gran tamaño, puede superar los 2 metros. Solitario y territorial. En peligro crítico de extinción.".into(),
-            peso_kg: gen_range(50.0, 200.0),
-        },
-        PezInfo {
-            nombre: "Pargo".into(),
-            cientifico: "Lutjanus analis".into(),
-            descripcion: "Pez de arrecife muy apreciado en pesca deportiva. Color plateado con aletas rojizas. Vive en cardúmenes.".into(),
-            peso_kg: gen_range(2.0, 10.0),
-        },
-        PezInfo {
-            nombre: "Jurel".into(),
-            cientifico: "Caranx hippos".into(),
-            descripcion: "Pez rápido y agresivo de aguas costeras. Color plateado con manchas oscuras. Muy común en Isla de Margarita.".into(),
-            peso_kg: gen_range(3.0, 15.0),
-        },
-        PezInfo {
-            nombre: "Corocoro".into(),
-            cientifico: "Micropogonias furnieri".into(),
-            descripcion: "Pez costero de la familia de los corvinas. Muy apreciado en la cocina venezolana. Color plateado con reflejos dorados.".into(),
-            peso_kg: gen_range(1.0, 5.0),
-        },
-        PezInfo {
-            nombre: "Lisa".into(),
-            cientifico: "Mugil cephalus".into(),
-            descripcion: "Pez costero que entra en lagunas y estuarios. Cuerpo alargado plateado. Muy común en la costa venezolana.".into(),
-            peso_kg: gen_range(1.0, 4.0),
-        },
-        PezInfo {
-            nombre: "Sardina".into(),
-            cientifico: "Sardinella aurita".into(),
-            descripcion: "Pez pequeño de cardumen, base de la pesca artesanal. Color plateado azulado. Importante para la economía local.".into(),
-            peso_kg: gen_range(0.1, 0.3),
-        },
-    ];
-    peces[gen_range(0, peces.len())].clone()
-}
-
+            nombre: animal.nombre_comun.clone(),
+            cientifico: animal.nombre_cientifico.clone(),
+            descripcion: animal.descripcion.clone(),
+            peso_kg: gen_range(2.0, 20.0),
+        }
+    }
+    
     pub fn update(&mut self, dt: f32) {
         if !self.activo { return; }
         match self.fase {
@@ -166,7 +138,7 @@ fn generar_pez(&self) -> PezInfo {
             _ => {}
         }
     }
-
+    
     pub fn tirar(&mut self) {
         if self.fase == FasePesca::Picando {
             self.exito = true;
@@ -179,21 +151,29 @@ fn generar_pez(&self) -> PezInfo {
             self.texto_terminado = false;
         }
     }
-
+    
     pub fn siguiente_o_salir(&mut self) {
         self.intentos += 1;
         if self.intentos >= self.max_intentos {
             self.cerrar();
         } else {
-            self.preparar_ronda();
+            // ✅ Nota: preparar_ronda necesita DB, se debe llamar desde estado
+            self.fase = FasePesca::Esperando;
+            self.timer = 0.0;
+            self.tiempo_espera = gen_range(2.5, 5.0);
+            self.tiempo_picada = gen_range(1.8, 3.5);
+            self.exito = false;
+            self.texto_pos = 0;
+            self.texto_timer = 0.0;
+            self.texto_terminado = false;
         }
     }
-
+    
     pub fn cerrar(&mut self) {
         self.activo = false;
         self.fase = FasePesca::Esperando;
     }
-
+    
     pub fn nombre_pez_visible(&self) -> Option<&str> {
         match self.fase {
             FasePesca::InfoPez => self.pez_actual.as_ref().map(|p| p.nombre.as_str()),
@@ -284,7 +264,7 @@ impl MinijuegoMuseo {
             quiz_puntaje: 0,
             quiz_total: 3,
             grilla: Vec::new(),
-            grilla_cols: 3,  // 3x3 grid
+            grilla_cols: 3,
             grilla_rows: 3,
             cursor_x: 1,
             cursor_y: 1,
@@ -296,7 +276,7 @@ impl MinijuegoMuseo {
             dino_excavado: None,
         }
     }
-
+    
     fn crear_exhibiciones() -> Vec<DinoInfo> {
         vec![
             DinoInfo {
@@ -331,18 +311,18 @@ impl MinijuegoMuseo {
             },
         ]
     }
-
+    
     pub fn iniciar(&mut self) {
         self.activo = true;
         self.fase = FaseMuseo::Entrada;
         self.indice = 0;
         self.quiz_puntaje = 0;
     }
-
+    
     pub fn entrar_explorando(&mut self) {
         self.fase = FaseMuseo::Explorando;
     }
-
+    
     pub fn iniciar_excavacion(&mut self) {
         self.fase = FaseMuseo::Excavando;
         self.golpes_restantes = self.max_golpes;
@@ -350,13 +330,9 @@ impl MinijuegoMuseo {
         self.fosil_reveladas = 0;
         self.cursor_x = self.grilla_cols / 2;
         self.cursor_y = self.grilla_rows / 2;
-
         let dino_idx = gen_range(0, self.exhibiciones.len());
         self.dino_excavado = Some(self.exhibiciones[dino_idx].clone());
-
         self.grilla = vec![vec![CeldaExcavacion::Roca(3); self.grilla_cols]; self.grilla_rows];
-
-        // Fósil en 3-5 celdas para 3x3
         self.fosil_celdas.clear();
         let cx = gen_range(1, self.grilla_cols - 1);
         let cy = gen_range(1, self.grilla_rows - 1);
@@ -377,7 +353,7 @@ impl MinijuegoMuseo {
             }
         }
     }
-
+    
     pub fn golpear(&mut self) {
         if self.golpes_restantes == 0 { return; }
         let x = self.cursor_x;
@@ -412,34 +388,34 @@ impl MinijuegoMuseo {
             self.terminado_texto = false;
         }
     }
-
+    
     pub fn mover_cursor(&mut self, dx: i32, dy: i32) {
         self.cursor_x = (self.cursor_x as i32 + dx).clamp(0, self.grilla_cols as i32 - 1) as usize;
         self.cursor_y = (self.cursor_y as i32 + dy).clamp(0, self.grilla_rows as i32 - 1) as usize;
     }
-
+    
     pub fn ver_exhibicion(&mut self) {
         self.fase = FaseMuseo::ViendoExhibicion;
         self.texto_pos = 0;
         self.texto_timer = 0.0;
         self.terminado_texto = false;
     }
-
+    
     pub fn volver_explorar(&mut self) {
         self.fase = FaseMuseo::Explorando;
     }
-
+    
     pub fn dino_actual(&self) -> &DinoInfo {
         &self.exhibiciones[self.indice]
     }
-
+    
     pub fn iniciar_quiz(&mut self) {
         self.quiz_indice = 0;
         self.quiz_puntaje = 0;
         self.generar_quiz();
         self.fase = FaseMuseo::Quiz;
     }
-
+    
     fn generar_quiz(&mut self) {
         let quizes: Vec<(&str, Vec<&str>, usize)> = vec![
             ("¿En qué era vivió el Carnotauro?",
@@ -462,7 +438,7 @@ impl MinijuegoMuseo {
         self.quiz_respondida = false;
         self.quiz_correcta_resp = false;
     }
-
+    
     pub fn responder_quiz(&mut self) {
         self.quiz_respondida = true;
         self.quiz_correcta_resp = self.quiz_seleccion == self.quiz_correcta;
@@ -470,7 +446,7 @@ impl MinijuegoMuseo {
             self.quiz_puntaje += 1;
         }
     }
-
+    
     pub fn siguiente_quiz(&mut self) {
         self.quiz_indice += 1;
         if self.quiz_indice >= self.quiz_total {
@@ -479,11 +455,11 @@ impl MinijuegoMuseo {
             self.generar_quiz();
         }
     }
-
+    
     pub fn cerrar(&mut self) {
         self.activo = false;
     }
-
+    
     pub fn update(&mut self, dt: f32) {
         if !self.activo { return; }
         match self.fase {
