@@ -4,7 +4,7 @@ use crate::config;
 use crate::db::ZooDB;
 
 // =====================================================================
-//  PESCA (Acuario) - En P5, mismos animales que Z5-2
+//  PESCA (Acuario) - En P5
 // =====================================================================
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FasePesca {
@@ -56,16 +56,14 @@ impl MinijuegoPesca {
             texto_terminado: false,
         }
     }
-    
-    // ✅ NUEVO: Recibe DB para obtener peces reales
+
     pub fn iniciar(&mut self, db: &ZooDB) {
         self.activo = true;
         self.intentos = 0;
         self.peces_atrapados.clear();
         self.preparar_ronda(db);
     }
-    
-    // ✅ NUEVO: Recibe DB para obtener peces reales
+
     fn preparar_ronda(&mut self, db: &ZooDB) {
         self.fase = FasePesca::Esperando;
         self.timer = 0.0;
@@ -77,29 +75,26 @@ impl MinijuegoPesca {
         self.texto_timer = 0.0;
         self.texto_terminado = false;
     }
-    
-    // ✅ CORREGIDO: Obtiene peces reales de la DB
-fn generar_pez(&self, db: &ZooDB) -> PezInfo {
-    let peces_db = db.animales_por_categoria("peces");
-    
-    if peces_db.is_empty() {
-        return PezInfo {
-            nombre: "Pavón".into(),
-            cientifico: "Cichla temensis".into(),
-            descripcion: "Depredador de agua dulce.".into(),
-            peso_kg: 5.0,
-        };
+
+    fn generar_pez(&self, db: &ZooDB) -> PezInfo {
+        let peces_db = db.animales_por_categoria("peces");
+        if peces_db.is_empty() {
+            return PezInfo {
+                nombre: "Pavón".into(),
+                cientifico: "Cichla temensis".into(),
+                descripcion: "Depredador de agua dulce.".into(),
+                peso_kg: 5.0,
+            };
+        }
+        let animal = &peces_db[gen_range(0, peces_db.len())];
+        PezInfo {
+            nombre: animal.nombre_comun.clone(),
+            cientifico: animal.nombre_cientifico.clone(),
+            descripcion: animal.descripcion.clone(),
+            peso_kg: gen_range(2.0, 20.0),
+        }
     }
-    
-    let animal = &peces_db[gen_range(0, peces_db.len())];
-    PezInfo {
-        nombre: animal.nombre_comun.clone(),
-        cientifico: animal.nombre_cientifico.clone(),
-        descripcion: animal.descripcion.clone(),
-        peso_kg: gen_range(2.0, 20.0),
-    }
-}
-    
+
     pub fn update(&mut self, dt: f32) {
         if !self.activo { return; }
         match self.fase {
@@ -136,7 +131,7 @@ fn generar_pez(&self, db: &ZooDB) -> PezInfo {
             _ => {}
         }
     }
-    
+
     pub fn tirar(&mut self) {
         if self.fase == FasePesca::Picando {
             self.exito = true;
@@ -149,13 +144,12 @@ fn generar_pez(&self, db: &ZooDB) -> PezInfo {
             self.texto_terminado = false;
         }
     }
-    
+
     pub fn siguiente_o_salir(&mut self) {
         self.intentos += 1;
         if self.intentos >= self.max_intentos {
             self.cerrar();
         } else {
-            // ✅ Nota: preparar_ronda necesita DB, se debe llamar desde estado
             self.fase = FasePesca::Esperando;
             self.timer = 0.0;
             self.tiempo_espera = gen_range(2.5, 5.0);
@@ -166,23 +160,15 @@ fn generar_pez(&self, db: &ZooDB) -> PezInfo {
             self.texto_terminado = false;
         }
     }
-    
+
     pub fn cerrar(&mut self) {
         self.activo = false;
         self.fase = FasePesca::Esperando;
     }
-    
-    pub fn nombre_pez_visible(&self) -> Option<&str> {
-        match self.fase {
-            FasePesca::InfoPez => self.pez_actual.as_ref().map(|p| p.nombre.as_str()),
-            FasePesca::Resultado if self.exito => self.pez_actual.as_ref().map(|p| p.nombre.as_str()),
-            _ => None,
-        }
-    }
 }
 
 // =====================================================================
-//  MUSEO - Excavación 3x3 + Quiz con puntaje
+//  MUSEO - Excavación 3x3 + Quiz
 // =====================================================================
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FaseMuseo {
@@ -218,7 +204,6 @@ pub struct MinijuegoMuseo {
     pub texto_pos: usize,
     pub texto_timer: f32,
     pub terminado_texto: bool,
-    // Quiz con puntaje
     pub quiz_pregunta: String,
     pub quiz_opciones: Vec<String>,
     pub quiz_correcta: usize,
@@ -228,7 +213,6 @@ pub struct MinijuegoMuseo {
     pub quiz_indice: usize,
     pub quiz_puntaje: usize,
     pub quiz_total: usize,
-    // Excavación 3x3
     pub grilla: Vec<Vec<CeldaExcavacion>>,
     pub grilla_cols: usize,
     pub grilla_rows: usize,
@@ -274,53 +258,53 @@ impl MinijuegoMuseo {
             dino_excavado: None,
         }
     }
-    
+
     fn crear_exhibiciones() -> Vec<DinoInfo> {
         vec![
             DinoInfo {
                 nombre: "Carnotauro".into(),
                 cientifico: "Carnotaurus sastrei".into(),
-                descripcion: "Dinosaurio terópodo del Cretácico Superior. Tenía cuernos sobre los ojos y brazos extremadamente reducidos. Bípedo y carnívoro. Descubierto en Argentina en 1984.".into(),
+                descripcion: "Dinosaurio terópodo del Cretácico Superior. Tenía cuernos sobre los ojos y brazos extremadamente reducidos.".into(),
                 era: "Cretácico Superior".into(),
             },
             DinoInfo {
                 nombre: "Pteranodon".into(),
                 cientifico: "Pteranodon longiceps".into(),
-                descripcion: "Reptil volador del Cretácico con envergadura de hasta 7 metros. No tenía dientes. Su cresta ósea servía como timón en vuelo. Se alimentaba de peces.".into(),
+                descripcion: "Reptil volador del Cretácico con envergadura de hasta 7 metros. No tenía dientes.".into(),
                 era: "Cretácico Superior".into(),
             },
             DinoInfo {
                 nombre: "Ammonite".into(),
                 cientifico: "Ammonoidea".into(),
-                descripcion: "Molusco marino extinto emparentado con el nautilus actual. Su concha espiral podía medir desde 1 cm hasta 2 metros. Vivió desde el Devónico hasta el Cretácico.".into(),
+                descripcion: "Molusco marino extinto emparentado con el nautilus actual.".into(),
                 era: "Devónico - Cretácico".into(),
             },
             DinoInfo {
                 nombre: "Trilobite".into(),
                 cientifico: "Trilobita".into(),
-                descripcion: "Artrópodo marino que vivió durante 300 millones de años. Tenía ojos compuestos de cristal de calcita. Uno de los fósiles más comunes y reconocibles del mundo.".into(),
+                descripcion: "Artrópodo marino que vivió durante 300 millones de años.".into(),
                 era: "Cámbrico - Pérmico".into(),
             },
             DinoInfo {
                 nombre: "Megalodon".into(),
                 cientifico: "Otodus megalodon".into(),
-                descripcion: "El tiburón más grande que existió, hasta 18 metros de largo. Sus dientes medían 17 cm. Dominó los océanos durante millones de años antes de extinguirse.".into(),
+                descripcion: "El tiburón más grande que existió, hasta 18 metros de largo.".into(),
                 era: "Mioceno - Plioceno".into(),
             },
         ]
     }
-    
-pub fn iniciar(&mut self, db: &ZooDB) {
-    self.activo = true;
-    self.intentos = 0;
-    self.peces_atrapados.clear();
-    self.preparar_ronda(db);
-}
-    
+
+    pub fn iniciar(&mut self) {
+        self.activo = true;
+        self.fase = FaseMuseo::Entrada;
+        self.indice = 0;
+        self.quiz_puntaje = 0;
+    }
+
     pub fn entrar_explorando(&mut self) {
         self.fase = FaseMuseo::Explorando;
     }
-    
+
     pub fn iniciar_excavacion(&mut self) {
         self.fase = FaseMuseo::Excavando;
         self.golpes_restantes = self.max_golpes;
@@ -334,10 +318,7 @@ pub fn iniciar(&mut self, db: &ZooDB) {
         self.fosil_celdas.clear();
         let cx = gen_range(1, self.grilla_cols - 1);
         let cy = gen_range(1, self.grilla_rows - 1);
-        let base_celdas = vec![(cx, cy)];
-        for (fx, fy) in &base_celdas {
-            self.fosil_celdas.push((*fx, *fy));
-        }
+        self.fosil_celdas.push((cx, cy));
         let extras = gen_range(2, 5);
         for _ in 0..extras {
             if let Some(&(bx, by)) = self.fosil_celdas.last() {
@@ -351,7 +332,7 @@ pub fn iniciar(&mut self, db: &ZooDB) {
             }
         }
     }
-    
+
     pub fn golpear(&mut self) {
         if self.golpes_restantes == 0 { return; }
         let x = self.cursor_x;
@@ -386,34 +367,23 @@ pub fn iniciar(&mut self, db: &ZooDB) {
             self.terminado_texto = false;
         }
     }
-    
+
     pub fn mover_cursor(&mut self, dx: i32, dy: i32) {
         self.cursor_x = (self.cursor_x as i32 + dx).clamp(0, self.grilla_cols as i32 - 1) as usize;
         self.cursor_y = (self.cursor_y as i32 + dy).clamp(0, self.grilla_rows as i32 - 1) as usize;
     }
-    
-    pub fn ver_exhibicion(&mut self) {
-        self.fase = FaseMuseo::ViendoExhibicion;
-        self.texto_pos = 0;
-        self.texto_timer = 0.0;
-        self.terminado_texto = false;
-    }
-    
+
     pub fn volver_explorar(&mut self) {
         self.fase = FaseMuseo::Explorando;
     }
-    
-    pub fn dino_actual(&self) -> &DinoInfo {
-        &self.exhibiciones[self.indice]
-    }
-    
+
     pub fn iniciar_quiz(&mut self) {
         self.quiz_indice = 0;
         self.quiz_puntaje = 0;
         self.generar_quiz();
         self.fase = FaseMuseo::Quiz;
     }
-    
+
     fn generar_quiz(&mut self) {
         let quizes: Vec<(&str, Vec<&str>, usize)> = vec![
             ("¿En qué era vivió el Carnotauro?",
@@ -423,7 +393,7 @@ pub fn iniciar(&mut self, db: &ZooDB) {
             ("¿Cuánto podía medir un Megalodon?",
              vec!["5 metros", "10 metros", "18 metros", "25 metros"], 2),
             ("¿Los ammonites estaban emparentados con...?",
-             vec!["Las estrellas de mar", "El nautilus", "Los corales", "Las medusas"], 1),
+             vec!["Estrellas de mar", "Nautilus", "Corales", "Medusas"], 1),
             ("¿De qué estaban hechos los ojos de los trilobites?",
              vec!["Queratina", "Cristal de calcita", "Cartílago", "Sílice"], 1),
         ];
@@ -436,7 +406,7 @@ pub fn iniciar(&mut self, db: &ZooDB) {
         self.quiz_respondida = false;
         self.quiz_correcta_resp = false;
     }
-    
+
     pub fn responder_quiz(&mut self) {
         self.quiz_respondida = true;
         self.quiz_correcta_resp = self.quiz_seleccion == self.quiz_correcta;
@@ -444,7 +414,7 @@ pub fn iniciar(&mut self, db: &ZooDB) {
             self.quiz_puntaje += 1;
         }
     }
-    
+
     pub fn siguiente_quiz(&mut self) {
         self.quiz_indice += 1;
         if self.quiz_indice >= self.quiz_total {
@@ -453,11 +423,11 @@ pub fn iniciar(&mut self, db: &ZooDB) {
             self.generar_quiz();
         }
     }
-    
+
     pub fn cerrar(&mut self) {
         self.activo = false;
     }
-    
+
     pub fn update(&mut self, dt: f32) {
         if !self.activo { return; }
         match self.fase {

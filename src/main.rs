@@ -142,25 +142,22 @@ async fn main() {
         .max(config::TRANSITION_MIN);
     audio.iniciar_ambiente(estado.escena);
 
-    println!("🎮 Zoo Pixel v0.5.3 iniciado correctamente");
+    println!("🎮 Zoo Pixel v0.5.4 iniciado correctamente");
     println!("📍 Escena inicial: {:?}", estado.escena);
     println!("📐 Resolución: {}x{}", screen_width(), screen_height());
 
     loop {
         let dt = get_frame_time().min(0.1);
 
-        // Input PC
         for accion in input::leer_teclado() {
             estado.procesar_accion(accion, &db);
         }
 
-        // Input Android (táctil)
         for accion in input::leer_tactil(&estado) {
             estado.procesar_accion(accion, &db);
         }
 
-        estado.update(dt, &db);
-
+        estado.update(dt, &db);  // ✅ Pasar db
         audio.update(dt);
 
         let (vol_m, vol_e) = if matches!(estado.pantalla, Pantalla::Config) {
@@ -175,14 +172,14 @@ async fn main() {
             audio.transicionar_a(destino);
         }
 
-        if estado.necesita_sonido_animal {
-            estado.necesita_sonido_animal = false;
-            audio.efecto_unico("boton");
-        }
+        // ✅ NO reproducir doble audio (solo grito de categoría)
+        // if estado.necesita_sonido_animal {
+        //     estado.necesita_sonido_animal = false;
+        //     audio.efecto_unico("boton");
+        // }
 
-        ui.render(&estado, &fondos, &audio);
+        ui.render(&estado, &fondos, &audio);  // ✅ Pasar audio
 
-        // Overlay de controles en PC
         let mostrar_overlay_pc = estado.mostrar_overlay
             && !cfg!(target_os = "android")
             && !estado.en_pantalla_info()
@@ -193,7 +190,6 @@ async fn main() {
             render_pc_overlay(&estado, &ui.font);
         }
 
-        // Filtro CRT
         let crt_activo = if matches!(estado.pantalla, Pantalla::Config) {
             estado.menu_config.crt
         } else {

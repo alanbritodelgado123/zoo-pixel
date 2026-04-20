@@ -155,38 +155,13 @@ pub fn dialogos_museo_db(db: &ZooDB) -> Vec<DialogoDB> {
     db.dialogos_museo()
 }
 
-// ✅ NUEVA: Diálogos de Ani para el museo (primera vez)
+// ✅ Diálogos de Ani para museo (primera vez)
 pub fn dialogos_museo_ani_db(db: &ZooDB) -> Vec<DialogoDB> {
     db.dialogos_por_contexto("museo_bienvenida")
 }
 
-// ✅ NUEVA: Diálogos de callejones (Zx-5)
+// ✅ Diálogos de callejones (Zx-5)
 pub fn dialogos_callejon_db(db: &ZooDB, escena_id: &str) -> Vec<DialogoDB> {
     let contexto = format!("callejon_{}", escena_id);
     db.dialogos_por_contexto(&contexto)
-}
-
-pub fn dialogos_museo_ayuda() -> Vec<LineaDialogo> {
-    vec![
-        LineaDialogo {
-            personaje: "Guía Ani".into(),
-            texto: "¡Hola! Soy Ani, curadora del Museo Paleontológico de Paria.".into(),
-        },
-        LineaDialogo {
-            personaje: "Guía Ani".into(),
-            texto: "Aquí puedes explorar fósiles reales, excavar en la arena o probar tus conocimientos.".into(),
-        },
-        LineaDialogo {
-            personaje: "Guía Ani".into(),
-            texto: "Selecciona 'Excavar Fósil' para empezar. Tienes 12 golpes para revelar la pieza.".into(),
-        },
-        LineaDialogo {
-            personaje: "Guía Ani".into(),
-            texto: "Las celdas rocosas muestran un número: indica cuántos golpes faltan.".into(),
-        },
-        LineaDialogo {
-            personaje: "Guía Ani".into(),
-            texto: "¡No te pierdas el Quiz! Si aciertas 2 de 3, demostrarás ser un experto.".into(),
-        },
-    ]
 }

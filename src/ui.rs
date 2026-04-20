@@ -57,7 +57,7 @@ impl UiRenderer {
         let sw = screen_width();
         let sh = screen_height();
         let sb = safe_bottom();
-        let box_h = sh * 0.18;
+        let box_h = sh * 0.25;  // ✅ Aumentado para mejor scroll
         let box_y = sb - box_h - 8.0;
         let box_x = 8.0;
         let box_w = sw - 16.0;
@@ -328,7 +328,7 @@ impl UiRenderer {
             COLOR_GREEN,
         );
 
-        // ✅ REPRODUCIR GRITO CUANDO TEXTO COMPLETADO
+        // ✅ REPRODUCIR GRITO DE CATEGORÍA (solo una vez)
         if terminado && !self.grito_reproducido.get() && !categoria.is_empty() {
             audio.reproducir_grito_categoria(categoria);
             self.grito_reproducido.set(true);
@@ -640,10 +640,9 @@ impl UiRenderer {
         let sw = screen_width();
         let sh = screen_height();
         let st = safe_top();
-        if let Some(ref info) = estado.libreta_info {
+        if let Some(ref _info) = estado.libreta_info {
             // Resetear grito al entrar
             self.grito_reproducido.set(false);
-            return;
         }
         let titulo = "Libreta de Campo";
         let fs_t = fs_adaptativo(titulo, &self.font, fs_pct(0.04), sw * 0.9);
@@ -909,7 +908,7 @@ impl UiRenderer {
         if !estado.escena.es_entrada() {
             // ✅ HINT ESPECÍFICO POR ZONA
             let hint = if estado.escena.es_pesca() {
-                "Z: Pescar"
+                "Z: Pescar"  // ✅ P5 ahora muestra "Z: Pescar"
             } else if estado.escena.es_museo() {
                 "Z: Explorar Museo"
             } else if estado.escena.es_foto() {
