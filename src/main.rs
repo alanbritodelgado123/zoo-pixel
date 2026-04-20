@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use macroquad::prelude::*;
+use macroquad::window::PlatformSettings;
+use macroquad::window::ActivityOrientation;
 
 mod animacion;
 mod audio;
@@ -28,13 +30,13 @@ use escena::Escena;
 fn window_conf() -> Conf {
     Conf {
         window_title: "Zoo Pixel".to_owned(),
-        window_width: 800,
+        window_width: 800,   // ✅ Landscape: ancho > alto
         window_height: 480,
-        window_resizable: !cfg!(target_os = "android"),  // ✅ Redimensionable solo en PC
+        window_resizable: !cfg!(target_os = "android"),  // ✅ PC: sí, Android: no
         high_dpi: true,
         platform: PlatformSettings {
             android_keep_screen_on: true,
-            android_orientation: ActivityOrientation::Landscape,  // ✅ Landscape en Android
+            android_orientation: ActivityOrientation::Landscape,  // ✅ Landscape
             ..Default::default()
         },
         ..Default::default()
@@ -45,20 +47,19 @@ fn window_conf() -> Conf {
 async fn main() {
     let db = ZooDB::new();
     
-    // ✅ Cargar fuente (ruta corregida)
-    let font_bytes = include_bytes!("assets/fonts/PressStart2P.ttf");
+    // ✅ Rutas desde la raíz del proyecto (donde está Cargo.toml)
+    let font_bytes = include_bytes!("../assets/fonts/PressStart2P.ttf");
     let font = load_ttf_font_from_bytes(font_bytes).expect("No se pudo cargar la fuente");
     
-    // ✅ Cargar spritesheet de fondos (ruta corregida)
-    let spritesheet_bytes = include_bytes!("assets/fondos/spritesheet_vertical.png");
+    let spritesheet_bytes = include_bytes!("../assets/fondos/spritesheet_vertical.png");
     let fondos = Fondos::new(spritesheet_bytes, 640.0, 480.0);
     
-    // ✅ Cargar íconos de categoría (ruta corregida + SIN TILDE)
+    // ✅ Cargar íconos de categoría
     let mut iconos_categoria: HashMap<String, Texture2D> = HashMap::new();
     let categorias = [
         ("anfibios", "anfibios_inspyrenet.png"),
         ("aves", "aves_inspyrenet.png"),
-        ("fosiles", "fosiles_inspyrenet.png"),  // ✅ SIN TILDE
+        ("fosiles", "fosiles_inspyrenet.png"),  // ✅ SIN TILDE (renombrar archivo)
         ("insectos", "insectos_inspyrenet.png"),
         ("mamiferos", "mamiferos_inspyrenet.png"),
         ("peces", "peces_inspyrenet.png"),
@@ -78,7 +79,7 @@ async fn main() {
         }
     }
     
-    // ✅ Cargar audio (rutas corregidas)
+    // ✅ Cargar audio
     let mut audio = AudioManager::new();
     
     match std::fs::read("assets/audio/ambiente/amb_entrada.ogg") {
@@ -103,7 +104,7 @@ async fn main() {
         }
     }
     
-    // ✅ Cargar texturas de guías (rutas corregidas)
+    // ✅ Cargar texturas de guías
     let textura_eli = std::fs::read("assets/guias/guiaEli.png")
         .ok()
         .map(|bytes| {
@@ -122,7 +123,6 @@ async fn main() {
             tex
         });
     
-    // ✅ UNA SOLA INSTANCIA DE UiRenderer (con iconos de categoría)
     let ui = UiRenderer::new(font, textura_eli, textura_ani, iconos_categoria);
     
     let mut estado = Estado::new(&db);
@@ -137,13 +137,7 @@ async fn main() {
     loop {
         let dt = get_frame_time().min(0.1);
         
-        // Input PC
         for accion in input::leer_teclado() {
-            estado.procesar_accion(accion, &db);
-        }
-        
-        // ✅ Input Android (táctil)
-        for accion in input::leer_tactil(&estado) {
             estado.procesar_accion(accion, &db);
         }
         
@@ -168,10 +162,8 @@ async fn main() {
             audio.efecto_unico("boton");
         }
         
-        // ✅ Renderizar UI con fondos
         ui.render(&estado, &fondos);
         
-        // ✅ Overlay de controles en PC
         let mostrar_overlay_pc = estado.mostrar_overlay
             && !cfg!(target_os = "android")
             && !estado.en_pantalla_info()
@@ -183,7 +175,6 @@ async fn main() {
             render_pc_overlay(&estado, &ui.font);
         }
         
-        // ✅ Filtro CRT
         let crt_activo = if matches!(estado.pantalla, Pantalla::Config) {
             estado.menu_config.crt
         } else {
@@ -271,7 +262,6 @@ fn render_crt() {
     let sh = screen_height();
     let gap = (sh / 200.0).max(2.0).min(4.0);
     let mut y = 0.0;
-    
     while y < sh {
         draw_rectangle(0.0, y, sw, 1.0, Color::new(0.0, 0.0, 0.0, 0.15));
         y += gap;
