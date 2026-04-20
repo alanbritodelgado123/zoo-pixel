@@ -42,7 +42,6 @@ build_targets = ["aarch64-linux-android", "armv7-linux-androideabi"]
 "android:exported" = "true"
 "android:screenOrientation" = "landscape"
 "android:keepScreenOn" = "true"
-"android:configChanges" = "orientation|screenSize"
 
 # ✅ Icono de la app (opcional)
 # [package.metadata.android.application_attributes]

@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 use macroquad::prelude::*;
-use macroquad::window::PlatformSettings;
-use macroquad::window::ActivityOrientation;
 
 mod animacion;
 mod audio;
@@ -34,11 +32,6 @@ fn window_conf() -> Conf {
         window_height: 480,
         window_resizable: !cfg!(target_os = "android"),  // ✅ PC: sí, Android: no
         high_dpi: true,
-        platform: PlatformSettings {
-            android_keep_screen_on: true,
-            android_orientation: ActivityOrientation::Landscape,  // ✅ Landscape
-            ..Default::default()
-        },
         ..Default::default()
     }
 }
@@ -59,7 +52,7 @@ async fn main() {
     let categorias = [
         ("anfibios", "anfibios_inspyrenet.png"),
         ("aves", "aves_inspyrenet.png"),
-        ("fosiles", "fosiles_inspyrenet.png"),  // ✅ SIN TILDE (renombrar archivo)
+        ("fosiles", "fosiles_inspyrenet.png"),  // ✅ SIN TILDE
         ("insectos", "insectos_inspyrenet.png"),
         ("mamiferos", "mamiferos_inspyrenet.png"),
         ("peces", "peces_inspyrenet.png"),

@@ -446,7 +446,7 @@ impl UiRenderer {
     }
 
     fn render_intro(&self, estado: &Estado, fondos: &Fondos) {
-        let sw = screen_width();
+        let _sw = screen_width();
         let sh = screen_height();
         let bar_h = bar_height();
         let st = safe_top();
