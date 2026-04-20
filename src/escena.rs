@@ -1,184 +1,176 @@
 use macroquad::prelude::*;
 use serde::{Deserialize, Serialize};
 
-/// Todas las zonas del nuevo mapa del zoológico.
-/// Convención: filas 0 (arriba) a 5 (abajo), columnas 0 a 5.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Escena {
-    EntradaPrincipal,
-    EntradaSecundaria,
-    AreaCentral,
-    A1, A2, A3,
-    B1, B2, B3, B4, B5,
-    C1, C2, C3,
-    Acuario,
-    Museo,
-    Aviario,
-    D1, D2, D3, D4,
+    E,
+    P1, P2, P3, P4, P5,
+    Z1_1, Z1_2, Z1_3, Z1_4, Z1_5,
+    Z2_1, Z2_2, Z2_3, Z2_4, Z2_5,
+    Z3_1, Z3_2, Z3_3, Z3_4, Z3_5,
+    Z4_1, Z4_2, Z4_3, Z4_4, Z4_5,
+    Z5_1, Z5_2, Z5_3, Z5_4, Z5_5,
 }
 
-/// Tipo lógico de la zona (para UI / lógica especial)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TipoZona {
     Entrada,
-    AreaEspecial,
+    Pasillo,
     Zona,
-    AtraccionEspecial,
 }
 
 impl Escena {
     pub const TODAS: &'static [Escena] = &[
-        Escena::EntradaPrincipal,
-        Escena::EntradaSecundaria,
-        Escena::AreaCentral,
-        Escena::A1, Escena::A2, Escena::A3,
-        Escena::B1, Escena::B2, Escena::B3, Escena::B4, Escena::B5,
-        Escena::C1, Escena::C2, Escena::C3,
-        Escena::Acuario,
-        Escena::Museo,
-        Escena::Aviario,
-        Escena::D1, Escena::D2, Escena::D3, Escena::D4,
+        Escena::E,
+        Escena::P1, Escena::P2, Escena::P3, Escena::P4, Escena::P5,
+        Escena::Z1_1, Escena::Z1_2, Escena::Z1_3, Escena::Z1_4, Escena::Z1_5,
+        Escena::Z2_1, Escena::Z2_2, Escena::Z2_3, Escena::Z2_4, Escena::Z2_5,
+        Escena::Z3_1, Escena::Z3_2, Escena::Z3_3, Escena::Z3_4, Escena::Z3_5,
+        Escena::Z4_1, Escena::Z4_2, Escena::Z4_3, Escena::Z4_4, Escena::Z4_5,
+        Escena::Z5_1, Escena::Z5_2, Escena::Z5_3, Escena::Z5_4, Escena::Z5_5,
     ];
 
     pub fn nombre(&self) -> &'static str {
         match self {
-            Self::EntradaPrincipal  => "Entrada Principal",
-            Self::EntradaSecundaria => "Entrada Secundaria",
-            Self::AreaCentral       => "Área Central",
-            Self::A1 => "Zona A1",
-            Self::A2 => "Zona A2",
-            Self::A3 => "Zona A3",
-            Self::B1 => "Zona B1",
-            Self::B2 => "Zona B2",
-            Self::B3 => "Zona B3",
-            Self::B4 => "Zona B4",
-            Self::B5 => "Zona B5",
-            Self::C1 => "Zona C1",
-            Self::C2 => "Zona C2",
-            Self::C3 => "Zona C3",
-            Self::Acuario => "Acuario",
-            Self::Museo   => "Museo",
-            Self::Aviario  => "Aviario",
-            Self::D1 => "Zona D1",
-            Self::D2 => "Zona D2",
-            Self::D3 => "Zona D3",
-            Self::D4 => "Zona D4",
+            Self::E => "Entrada Principal",
+            Self::P1 => "Pasillo 1",
+            Self::P2 => "Pasillo 2",
+            Self::P3 => "Pasillo 3",
+            Self::P4 => "Pasillo 4",
+            Self::P5 => "Pasillo 5 - Acuario",
+            Self::Z1_1 => "Llanos Centrales - Chigüire",
+            Self::Z1_2 => "Llanos Centrales - Aves",
+            Self::Z1_3 => "Llanos Centrales - Peces",
+            Self::Z1_4 => "Llanos Centrales - Reptiles",
+            Self::Z1_5 => "Llanos Occidentales",
+            Self::Z2_1 => "Cordillera de los Andes",
+            Self::Z2_2 => "Andes - Aves",
+            Self::Z2_3 => "Cordillera de la Costa",
+            Self::Z2_4 => "Páramos de Mérida",
+            Self::Z2_5 => "Sierra de San Luis",
+            Self::Z3_1 => "Selva Amazónica",
+            Self::Z3_2 => "Amazonas - Insectos",
+            Self::Z3_3 => "Serranía de la Neblina",
+            Self::Z3_4 => "Selva de Imataca",
+            Self::Z3_5 => "Cerro Yapacana",
+            Self::Z4_1 => "Sierra de Perijá",
+            Self::Z4_2 => "Parque Nacional Canaima",
+            Self::Z4_3 => "Delta del Orinoco I",
+            Self::Z4_4 => "Delta del Orinoco II",
+            Self::Z4_5 => "Río Orinoco",
+            Self::Z5_1 => "Península de Paria - Museo",
+            Self::Z5_2 => "Isla de Margarita",
+            Self::Z5_3 => "Costa Caribe Oriental",
+            Self::Z5_4 => "Los Roques",
+            Self::Z5_5 => "Lago de Maracaibo - Aviario",
         }
     }
 
-    /// ID para la base de datos (snake_case, sin tildes)
     pub fn db_id(&self) -> &'static str {
         match self {
-            Self::EntradaPrincipal  => "entrada_principal",
-            Self::EntradaSecundaria => "entrada_secundaria",
-            Self::AreaCentral       => "area_central",
-            Self::A1 => "a1", Self::A2 => "a2", Self::A3 => "a3",
-            Self::B1 => "b1", Self::B2 => "b2", Self::B3 => "b3",
-            Self::B4 => "b4", Self::B5 => "b5",
-            Self::C1 => "c1", Self::C2 => "c2", Self::C3 => "c3",
-            Self::Acuario => "acuario",
-            Self::Museo   => "museo",
-            Self::Aviario  => "aviario",
-            Self::D1 => "d1", Self::D2 => "d2", Self::D3 => "d3", Self::D4 => "d4",
+            Self::E => "entrada",
+            Self::P1 => "p1", Self::P2 => "p2", Self::P3 => "p3",
+            Self::P4 => "p4", Self::P5 => "p5",
+            Self::Z1_1 => "z1_1", Self::Z1_2 => "z1_2", Self::Z1_3 => "z1_3",
+            Self::Z1_4 => "z1_4", Self::Z1_5 => "z1_5",
+            Self::Z2_1 => "z2_1", Self::Z2_2 => "z2_2", Self::Z2_3 => "z2_3",
+            Self::Z2_4 => "z2_4", Self::Z2_5 => "z2_5",
+            Self::Z3_1 => "z3_1", Self::Z3_2 => "z3_2", Self::Z3_3 => "z3_3",
+            Self::Z3_4 => "z3_4", Self::Z3_5 => "z3_5",
+            Self::Z4_1 => "z4_1", Self::Z4_2 => "z4_2", Self::Z4_3 => "z4_3",
+            Self::Z4_4 => "z4_4", Self::Z4_5 => "z4_5",
+            Self::Z5_1 => "z5_1", Self::Z5_2 => "z5_2", Self::Z5_3 => "z5_3",
+            Self::Z5_4 => "z5_4", Self::Z5_5 => "z5_5",
         }
     }
 
-    /// Letra corta para el minimapa
     pub fn letra(&self) -> &'static str {
         match self {
-            Self::EntradaPrincipal  => "EP",
-            Self::EntradaSecundaria => "ES",
-            Self::AreaCentral       => "AC",
-            Self::A1 => "A1", Self::A2 => "A2", Self::A3 => "A3",
-            Self::B1 => "B1", Self::B2 => "B2", Self::B3 => "B3",
-            Self::B4 => "B4", Self::B5 => "B5",
-            Self::C1 => "C1", Self::C2 => "C2", Self::C3 => "C3",
-            Self::Acuario => "Aq",
-            Self::Museo   => "Mu",
-            Self::Aviario  => "Av",
-            Self::D1 => "D1", Self::D2 => "D2", Self::D3 => "D3", Self::D4 => "D4",
+            Self::E => "E",
+            Self::P1 => "P1", Self::P2 => "P2", Self::P3 => "P3",
+            Self::P4 => "P4", Self::P5 => "P5",
+            Self::Z1_1 => "L1", Self::Z1_2 => "L2", Self::Z1_3 => "L3",
+            Self::Z1_4 => "L4", Self::Z1_5 => "L5",
+            Self::Z2_1 => "A1", Self::Z2_2 => "A2", Self::Z2_3 => "A3",
+            Self::Z2_4 => "A4", Self::Z2_5 => "A5",
+            Self::Z3_1 => "S1", Self::Z3_2 => "S2", Self::Z3_3 => "S3",
+            Self::Z3_4 => "S4", Self::Z3_5 => "S5",
+            Self::Z4_1 => "P1", Self::Z4_2 => "P2", Self::Z4_3 => "P3",
+            Self::Z4_4 => "P4", Self::Z4_5 => "P5",
+            Self::Z5_1 => "C1", Self::Z5_2 => "C2", Self::Z5_3 => "C3",
+            Self::Z5_4 => "C4", Self::Z5_5 => "C5",
         }
     }
 
     pub fn tipo(&self) -> TipoZona {
         match self {
-            Self::EntradaPrincipal | Self::EntradaSecundaria => TipoZona::Entrada,
-            Self::AreaCentral => TipoZona::AreaEspecial,
-            Self::Acuario | Self::Museo | Self::Aviario => TipoZona::AtraccionEspecial,
+            Self::E => TipoZona::Entrada,
+            Self::P1 | Self::P2 | Self::P3 | Self::P4 | Self::P5 => TipoZona::Pasillo,
             _ => TipoZona::Zona,
         }
     }
 
-    /// Posición en la grilla del mapa: (columna, fila)
-    /// Grilla de 6 columnas × 6 filas
     pub fn pos_mapa(&self) -> (usize, usize) {
         match self {
-            Self::EntradaPrincipal  => (2, 5),
-            Self::EntradaSecundaria => (3, 0),
-            Self::AreaCentral       => (2, 4),
-            Self::A1 => (1, 4),
-            Self::A2 => (3, 4),
-            Self::A3 => (4, 4),
-            Self::B1 => (0, 3),
-            Self::B2 => (1, 3),
-            Self::B3 => (2, 3),
-            Self::B4 => (3, 3),
-            Self::B5 => (5, 3),
-            Self::C1 => (0, 2),
-            Self::Acuario => (1, 2),
-            Self::Museo   => (2, 2),
-            Self::C2 => (3, 2),
-            Self::C3 => (4, 2),
-            Self::Aviario => (4, 3),
-            Self::D1 => (0, 1),
-            Self::D2 => (1, 1),
-            Self::D3 => (2, 1),
-            Self::D4 => (3, 1),
+            Self::E => (2, 0),
+            Self::P1 => (0, 1), Self::P2 => (1, 1), Self::P3 => (2, 1),
+            Self::P4 => (3, 1), Self::P5 => (4, 1),
+            Self::Z1_1 => (0, 2), Self::Z1_2 => (0, 3), Self::Z1_3 => (0, 4),
+            Self::Z1_4 => (0, 5), Self::Z1_5 => (0, 6),
+            Self::Z2_1 => (1, 2), Self::Z2_2 => (1, 3), Self::Z2_3 => (1, 4),
+            Self::Z2_4 => (1, 5), Self::Z2_5 => (1, 6),
+            Self::Z3_1 => (2, 2), Self::Z3_2 => (2, 3), Self::Z3_3 => (2, 4),
+            Self::Z3_4 => (2, 5), Self::Z3_5 => (2, 6),
+            Self::Z4_1 => (3, 2), Self::Z4_2 => (3, 3), Self::Z4_3 => (3, 4),
+            Self::Z4_4 => (3, 5), Self::Z4_5 => (3, 6),
+            Self::Z5_1 => (4, 2), Self::Z5_2 => (4, 3), Self::Z5_3 => (4, 4),
+            Self::Z5_4 => (4, 5), Self::Z5_5 => (4, 6),
         }
     }
 
-    /// Conexiones: [Arriba, Abajo, Izquierda, Derecha]
-    /// Derivadas del grafo bidireccional según posiciones relativas.
     pub fn conexiones(&self) -> [Option<Escena>; 4] {
         use Escena::*;
         match self {
-            //                         Arriba              Abajo                 Izquierda          Derecha
-            EntradaPrincipal  => [Some(AreaCentral),       None,                 None,              None             ],
-            EntradaSecundaria => [None,                    Some(D4),             None,              None             ],
-            AreaCentral       => [Some(B3),                Some(EntradaPrincipal),Some(A1),         Some(A2)         ],
-
-            A1 => [Some(B2),     None,            None,            Some(AreaCentral)],
-            A2 => [None,         None,            Some(AreaCentral), Some(A3)       ],
-            A3 => [None,         None,            Some(A2),        None             ],
-
-            B1 => [Some(C1),     None,            None,            Some(B2)         ],
-            B2 => [Some(Acuario),Some(A1),        Some(B1),        Some(B3)         ],
-            B3 => [Some(Museo),  Some(AreaCentral),Some(B2),       Some(B4)         ],
-            B4 => [Some(C2),     None,            Some(B3),        Some(Aviario)    ],
-            B5 => [None,         None,            Some(Aviario),   None             ],
-
-            C1 => [Some(D1),     Some(B1),        None,            Some(Acuario)    ],
-            Acuario => [Some(D2),Some(B2),        Some(C1),        None             ],
-            Museo   => [Some(D3),Some(B3),        None,            None             ],
-            C2 => [Some(D4),     Some(B4),        None,            Some(C3)         ],
-            C3 => [None,         Some(Aviario),   Some(C2),        None             ],
-            Aviario => [Some(C3),None,            Some(B4),        Some(B5)         ],
-
-            D1 => [None,         Some(C1),        None,            Some(D2)         ],
-            D2 => [None,         Some(Acuario),   Some(D1),        Some(D3)         ],
-            D3 => [None,         Some(Museo),     Some(D2),        Some(D4)         ],
-            D4 => [Some(EntradaSecundaria), Some(C2), Some(D3),    None             ],
+            E => [Some(P3), None, None, None],
+            // ✅ BUG FIX: P2 ahora puede bajar a E (índice 1 = Some(E))
+            P1 => [Some(Z1_1), Some(E), None, Some(P2)],
+            P2 => [Some(Z2_1), Some(E), Some(P1), Some(P3)],
+            P3 => [Some(Z3_1), Some(E), Some(P2), Some(P4)],
+            P4 => [Some(Z4_1), Some(E), Some(P3), Some(P5)],
+            P5 => [Some(Z5_1), Some(E), Some(P4), None],
+            Z1_1 => [Some(Z1_2), Some(P1), None, None],
+            Z1_2 => [Some(Z1_3), Some(Z1_1), None, None],
+            Z1_3 => [Some(Z1_4), Some(Z1_2), None, None],
+            Z1_4 => [Some(Z1_5), Some(Z1_3), None, None],
+            Z1_5 => [None, Some(Z1_4), None, None],
+            Z2_1 => [Some(Z2_2), Some(P2), None, None],
+            Z2_2 => [Some(Z2_3), Some(Z2_1), None, None],
+            Z2_3 => [Some(Z2_4), Some(Z2_2), None, None],
+            Z2_4 => [Some(Z2_5), Some(Z2_3), None, None],
+            Z2_5 => [None, Some(Z2_4), None, None],
+            Z3_1 => [Some(Z3_2), Some(P3), None, None],
+            Z3_2 => [Some(Z3_3), Some(Z3_1), None, None],
+            Z3_3 => [Some(Z3_4), Some(Z3_2), None, None],
+            Z3_4 => [Some(Z3_5), Some(Z3_3), None, None],
+            Z3_5 => [None, Some(Z3_4), None, None],
+            Z4_1 => [Some(Z4_2), Some(P4), None, None],
+            Z4_2 => [Some(Z4_3), Some(Z4_1), None, None],
+            Z4_3 => [Some(Z4_4), Some(Z4_2), None, None],
+            Z4_4 => [Some(Z4_5), Some(Z4_3), None, None],
+            Z4_5 => [None, Some(Z4_4), None, None],
+            Z5_1 => [Some(Z5_2), Some(P5), None, None],
+            Z5_2 => [Some(Z5_3), Some(Z5_1), None, None],
+            Z5_3 => [Some(Z5_4), Some(Z5_2), None, None],
+            Z5_4 => [Some(Z5_5), Some(Z5_3), None, None],
+            Z5_5 => [None, Some(Z5_4), None, None],
         }
     }
 
-    /// Color de fondo fallback cuando no hay textura
     pub fn color_fondo(&self) -> Color {
         match self.tipo() {
-            TipoZona::Entrada         => Color::new(0.05, 0.05, 0.08, 1.0),
-            TipoZona::AreaEspecial     => Color::new(0.07, 0.06, 0.04, 1.0),
-            TipoZona::AtraccionEspecial => Color::new(0.03, 0.06, 0.08, 1.0),
+            TipoZona::Entrada => Color::new(0.05, 0.05, 0.08, 1.0),
+            TipoZona::Pasillo => Color::new(0.07, 0.06, 0.04, 1.0),
             TipoZona::Zona => {
-                // Variar un poco según hash del db_id
                 let h = self.db_id().bytes().fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32));
                 let r = 0.03 + (h % 5) as f32 * 0.01;
                 let g = 0.04 + ((h / 5) % 5) as f32 * 0.01;
@@ -188,13 +180,34 @@ impl Escena {
         }
     }
 
-    /// ¿Es una entrada donde no se muestran animales?
     pub fn es_entrada(&self) -> bool {
-        matches!(self, Self::EntradaPrincipal | Self::EntradaSecundaria | Self::AreaCentral)
+        matches!(self.tipo(), TipoZona::Entrada | TipoZona::Pasillo)
     }
 
-    /// ¿Es el aviario (modo foto)?
-    pub fn es_aviario(&self) -> bool {
-        matches!(self, Self::Aviario)
+    pub fn es_pesca(&self) -> bool {
+        *self == Escena::P5
+    }
+
+    pub fn es_museo(&self) -> bool {
+        *self == Escena::Z5_1
+    }
+
+    pub fn es_foto(&self) -> bool {
+        *self == Escena::Z5_5
+    }
+
+    pub fn icono_categoria(&self) -> &'static str {
+        match self {
+            Self::Z1_1 | Self::Z1_5 | Self::Z2_1 | Self::Z2_5 | Self::Z3_1 | Self::Z3_5 |
+            Self::Z4_2 | Self::Z4_3 | Self::Z5_2 => "mamiferos",
+            Self::Z1_2 | Self::Z2_2 | Self::Z3_3 | Self::Z4_4 | Self::Z5_3 | Self::Z5_5 => "aves",
+            Self::Z1_3 | Self::Z4_5 => "peces",
+            Self::Z1_4 | Self::Z4_1 | Self::Z5_1 | Self::Z5_4 => "reptiles",
+            Self::Z3_5 | Self::Z4_2 => "anfibios",
+            Self::Z3_2 => "insectos",
+            Self::Z2_3 | Self::Z3_1 | Self::Z3_4 | Self::Z4_1 | Self::Z4_3 => "primates",
+            Self::Z5_1 => "fosiles",
+            _ => "mamiferos",
+        }
     }
 }

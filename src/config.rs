@@ -1,4 +1,3 @@
-// src/config.rs
 use macroquad::prelude::*;
 
 pub const TRANSITION_SECS_FALLBACK: f32 = 0.5;
@@ -7,8 +6,8 @@ pub const BTN_RATIO: f32 = 0.14;
 pub const BTN_PAD: f32 = 15.0;
 pub const BAR_HEIGHT_RATIO: f32 = 0.06;
 pub const TYPEWRITER_CPS: f32 = 35.0;
-pub const MAPA_COLS: usize = 6;
-pub const MAPA_ROWS: usize = 6;
+pub const MAPA_COLS: usize = 5;  // Actualizado a 5 columnas
+pub const MAPA_ROWS: usize = 7;  // Actualizado a 7 filas
 pub const CICLO_DIA_SECS: f32 = 300.0;
 
 pub const P_BLACK:        Color = Color::new(0.122, 0.098, 0.098, 1.0);
@@ -96,7 +95,6 @@ pub fn safe_bottom() -> f32 {
     screen_height() - overlay_height()
 }
 
-/// Calcula font size que quepa en el ancho dado, nunca mayor que max_fs
 pub fn fs_adaptativo(texto: &str, font: &Font, max_fs: u16, max_w: f32) -> u16 {
     let mut fs = max_fs;
     loop {
@@ -106,13 +104,11 @@ pub fn fs_adaptativo(texto: &str, font: &Font, max_fs: u16, max_w: f32) -> u16 {
     }
 }
 
-/// Mide la altura real del texto (ascent + descent)
 pub fn text_height(font: &Font, fs: u16) -> f32 {
     let m = measure_text("Ay", Some(font), fs, 1.0);
     m.height
 }
 
-/// Calcula font size basado en porcentaje de la altura de pantalla
 pub fn fs_pct(pct: f32) -> u16 {
     (screen_height() * pct).max(8.0) as u16
 }

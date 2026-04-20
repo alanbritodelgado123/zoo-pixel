@@ -1,12 +1,10 @@
-// src/minijuego.rs
 use macroquad::prelude::*;
 use macroquad::rand::gen_range;
 use crate::config;
 
 // =====================================================================
-//  PESCA (Acuario) - Más lento
+//  PESCA (Acuario) - En P5, mismos animales que Z5-2
 // =====================================================================
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FasePesca {
     Esperando,
@@ -68,8 +66,8 @@ impl MinijuegoPesca {
     fn preparar_ronda(&mut self) {
         self.fase = FasePesca::Esperando;
         self.timer = 0.0;
-        self.tiempo_espera = gen_range(2.5, 5.0);  // Más tiempo de espera
-        self.tiempo_picada = gen_range(1.8, 3.5);  // Más tiempo para reaccionar (era 1.0-2.0)
+        self.tiempo_espera = gen_range(2.5, 5.0);
+        self.tiempo_picada = gen_range(1.8, 3.5);
         self.pez_actual = Some(self.generar_pez());
         self.exito = false;
         self.texto_pos = 0;
@@ -78,36 +76,37 @@ impl MinijuegoPesca {
     }
 
     fn generar_pez(&self) -> PezInfo {
+        // Mismos animales que Z5-2 (Isla de Margarita)
         let peces = vec![
+            PezInfo {
+                nombre: "Venado de Margarita".into(),
+                cientifico: "Odocoileus virginianus margaritae".into(),
+                descripcion: "Subespecie endémica de Isla de Margarita. Más pequeño que venados continentales. Adaptado a clima árido insular. En peligro crítico, quedan menos de 200.".into(),
+                peso_kg: gen_range(30.0, 50.0),
+            },
+            PezInfo {
+                nombre: "Cotorra Margariteña".into(),
+                cientifico: "Amazona barbadensis".into(),
+                descripcion: "Loro endémico de zonas áridas. Plumaje verde con frente amarilla. En peligro por tráfico ilegal. Se alimenta de semillas de cactus.".into(),
+                peso_kg: gen_range(0.3, 0.5),
+            },
+            PezInfo {
+                nombre: "Ñangaro".into(),
+                cientifico: "Psittacara wagleri".into(),
+                descripcion: "Perico de frente roja. Ruidoso y gregario. Habita bosques secos y zonas cultivadas. Se alimenta de frutas y semillas. Forma bandadas grandes.".into(),
+                peso_kg: gen_range(0.2, 0.4),
+            },
+            PezInfo {
+                nombre: "Cunaguaro de Margarita".into(),
+                cientifico: "Leopardus pardalis pardalis".into(),
+                descripcion: "Subespecie de ocelote de Isla de Margarita. Patrón de manchas único. Cazador nocturno solitario. En peligro por habitat limitado insular.".into(),
+                peso_kg: gen_range(8.0, 16.0),
+            },
             PezInfo {
                 nombre: "Pavón".into(),
                 cientifico: "Cichla temensis".into(),
-                descripcion: "Depredador de agua dulce, puede pesar hasta 12 kg. Muy combativo al ser pescado. Color verde-dorado con manchas oscuras.".into(),
-                peso_kg: gen_range(1.5, 12.0),
-            },
-            PezInfo {
-                nombre: "Piranha".into(),
-                cientifico: "Pygocentrus nattereri".into(),
-                descripcion: "Dientes afilados como navajas. Vive en cardúmenes. Pese a su fama, rara vez ataca humanos.".into(),
-                peso_kg: gen_range(0.3, 2.0),
-            },
-            PezInfo {
-                nombre: "Bagre Rayado".into(),
-                cientifico: "Pseudoplatystoma fasciatum".into(),
-                descripcion: "Pez gato grande de ríos venezolanos. Puede medir hasta 1 metro. Nocturno y depredador.".into(),
-                peso_kg: gen_range(2.0, 15.0),
-            },
-            PezInfo {
-                nombre: "Coporo".into(),
-                cientifico: "Prochilodus mariae".into(),
-                descripcion: "Pez migratorio de los llanos venezolanos. Se alimenta de algas y detritos del fondo.".into(),
-                peso_kg: gen_range(0.5, 3.0),
-            },
-            PezInfo {
-                nombre: "Caribe".into(),
-                cientifico: "Serrasalmus rhombeus".into(),
-                descripcion: "Piraña negra solitaria, más grande que la piraña roja. Depredador poderoso de ríos profundos.".into(),
-                peso_kg: gen_range(0.5, 4.0),
+                descripcion: "Depredador de agua dulce, puede pesar hasta 15 kg. Muy combativo al ser pescado. Color verde-dorado con manchas oscuras características.".into(),
+                peso_kg: gen_range(3.0, 15.0),
             },
         ];
         peces[gen_range(0, peces.len())].clone()
@@ -126,7 +125,6 @@ impl MinijuegoPesca {
             FasePesca::Picando => {
                 self.timer += dt;
                 if self.timer >= self.tiempo_picada {
-                    // Se escapó
                     self.exito = false;
                     self.fase = FasePesca::Resultado;
                     self.timer = 0.0;
@@ -178,7 +176,6 @@ impl MinijuegoPesca {
         self.fase = FasePesca::Esperando;
     }
 
-    /// Nombre del pez solo si ya fue atrapado
     pub fn nombre_pez_visible(&self) -> Option<&str> {
         match self.fase {
             FasePesca::InfoPez => self.pez_actual.as_ref().map(|p| p.nombre.as_str()),
@@ -189,9 +186,8 @@ impl MinijuegoPesca {
 }
 
 // =====================================================================
-//  MUSEO - Excavación de fósiles (estilo Pokémon Diamante)
+//  MUSEO - Excavación 3x3 + Quiz con puntaje
 // =====================================================================
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FaseMuseo {
     Entrada,
@@ -200,6 +196,7 @@ pub enum FaseMuseo {
     FosilRevelado,
     ViendoExhibicion,
     Quiz,
+    QuizResultado,
 }
 
 #[derive(Debug, Clone)]
@@ -210,14 +207,10 @@ pub struct DinoInfo {
     pub era: String,
 }
 
-/// Celda de la grilla de excavación
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CeldaExcavacion {
-    /// Roca sin tocar (capas 3, 2, 1)
     Roca(u8),
-    /// Fósil revelado
     Fosil,
-    /// Vacío (ya limpiado, no había fósil)
     Vacio,
 }
 
@@ -229,8 +222,7 @@ pub struct MinijuegoMuseo {
     pub texto_pos: usize,
     pub texto_timer: f32,
     pub terminado_texto: bool,
-
-    // Quiz
+    // Quiz con puntaje
     pub quiz_pregunta: String,
     pub quiz_opciones: Vec<String>,
     pub quiz_correcta: usize,
@@ -238,8 +230,9 @@ pub struct MinijuegoMuseo {
     pub quiz_respondida: bool,
     pub quiz_correcta_resp: bool,
     pub quiz_indice: usize,
-
-    // Excavación
+    pub quiz_puntaje: usize,
+    pub quiz_total: usize,
+    // Excavación 3x3
     pub grilla: Vec<Vec<CeldaExcavacion>>,
     pub grilla_cols: usize,
     pub grilla_rows: usize,
@@ -263,7 +256,6 @@ impl MinijuegoMuseo {
             texto_pos: 0,
             texto_timer: 0.0,
             terminado_texto: false,
-
             quiz_pregunta: String::new(),
             quiz_opciones: Vec::new(),
             quiz_correcta: 0,
@@ -271,14 +263,15 @@ impl MinijuegoMuseo {
             quiz_respondida: false,
             quiz_correcta_resp: false,
             quiz_indice: 0,
-
+            quiz_puntaje: 0,
+            quiz_total: 3,
             grilla: Vec::new(),
-            grilla_cols: 8,
-            grilla_rows: 6,
-            cursor_x: 4,
-            cursor_y: 3,
+            grilla_cols: 3,  // 3x3 grid
+            grilla_rows: 3,
+            cursor_x: 1,
+            cursor_y: 1,
             golpes_restantes: 0,
-            max_golpes: 25,
+            max_golpes: 12,
             fosil_encontrado: false,
             fosil_celdas: Vec::new(),
             fosil_reveladas: 0,
@@ -325,6 +318,7 @@ impl MinijuegoMuseo {
         self.activo = true;
         self.fase = FaseMuseo::Entrada;
         self.indice = 0;
+        self.quiz_puntaje = 0;
     }
 
     pub fn entrar_explorando(&mut self) {
@@ -339,28 +333,20 @@ impl MinijuegoMuseo {
         self.cursor_x = self.grilla_cols / 2;
         self.cursor_y = self.grilla_rows / 2;
 
-        // Elegir un fósil aleatorio
         let dino_idx = gen_range(0, self.exhibiciones.len());
         self.dino_excavado = Some(self.exhibiciones[dino_idx].clone());
 
-        // Crear grilla con rocas (3 capas)
         self.grilla = vec![vec![CeldaExcavacion::Roca(3); self.grilla_cols]; self.grilla_rows];
 
-        // Colocar fósil: patrón aleatorio de 4-8 celdas
+        // Fósil en 3-5 celdas para 3x3
         self.fosil_celdas.clear();
         let cx = gen_range(1, self.grilla_cols - 1);
         let cy = gen_range(1, self.grilla_rows - 1);
-        // Forma del fósil: cruz + extras
-        let base_celdas = vec![
-            (cx, cy), (cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1),
-        ];
+        let base_celdas = vec![(cx, cy)];
         for (fx, fy) in &base_celdas {
-            if *fx < self.grilla_cols && *fy < self.grilla_rows {
-                self.fosil_celdas.push((*fx, *fy));
-            }
+            self.fosil_celdas.push((*fx, *fy));
         }
-        // Agregar 1-3 celdas extra aleatorias adyacentes
-        let extras = gen_range(1, 4);
+        let extras = gen_range(2, 5);
         for _ in 0..extras {
             if let Some(&(bx, by)) = self.fosil_celdas.last() {
                 let dx: i32 = gen_range(-1, 2);
@@ -376,19 +362,15 @@ impl MinijuegoMuseo {
 
     pub fn golpear(&mut self) {
         if self.golpes_restantes == 0 { return; }
-
         let x = self.cursor_x;
         let y = self.cursor_y;
-
         match self.grilla[y][x] {
             CeldaExcavacion::Roca(capas) => {
                 self.golpes_restantes -= 1;
                 if capas <= 1 {
-                    // Última capa: revelar lo que hay debajo
                     if self.fosil_celdas.contains(&(x, y)) {
                         self.grilla[y][x] = CeldaExcavacion::Fosil;
                         self.fosil_reveladas += 1;
-                        // Verificar si se completó el fósil
                         if self.fosil_reveladas >= self.fosil_celdas.len() {
                             self.fosil_encontrado = true;
                             self.fase = FaseMuseo::FosilRevelado;
@@ -403,12 +385,10 @@ impl MinijuegoMuseo {
                     self.grilla[y][x] = CeldaExcavacion::Roca(capas - 1);
                 }
             }
-            _ => {} // Ya revelado, no gastar golpe
+            _ => {}
         }
-
-        // Si se acabaron los golpes sin completar
         if self.golpes_restantes == 0 && !self.fosil_encontrado {
-            self.fase = FaseMuseo::FosilRevelado; // Mostrar resultado parcial
+            self.fase = FaseMuseo::FosilRevelado;
             self.texto_pos = 0;
             self.texto_timer = 0.0;
             self.terminado_texto = false;
@@ -437,6 +417,7 @@ impl MinijuegoMuseo {
 
     pub fn iniciar_quiz(&mut self) {
         self.quiz_indice = 0;
+        self.quiz_puntaje = 0;
         self.generar_quiz();
         self.fase = FaseMuseo::Quiz;
     }
@@ -454,7 +435,6 @@ impl MinijuegoMuseo {
             ("¿De qué estaban hechos los ojos de los trilobites?",
              vec!["Queratina", "Cristal de calcita", "Cartílago", "Sílice"], 1),
         ];
-
         let idx = self.quiz_indice % quizes.len();
         let (preg, opts, correcta) = &quizes[idx];
         self.quiz_pregunta = preg.to_string();
@@ -468,12 +448,15 @@ impl MinijuegoMuseo {
     pub fn responder_quiz(&mut self) {
         self.quiz_respondida = true;
         self.quiz_correcta_resp = self.quiz_seleccion == self.quiz_correcta;
+        if self.quiz_correcta_resp {
+            self.quiz_puntaje += 1;
+        }
     }
 
     pub fn siguiente_quiz(&mut self) {
         self.quiz_indice += 1;
-        if self.quiz_indice >= 3 {
-            self.fase = FaseMuseo::Explorando;
+        if self.quiz_indice >= self.quiz_total {
+            self.fase = FaseMuseo::QuizResultado;
         } else {
             self.generar_quiz();
         }

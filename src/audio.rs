@@ -1,4 +1,3 @@
-// src/audio.rs
 use std::collections::HashMap;
 use macroquad::audio::*;
 use crate::escena::Escena;
@@ -44,23 +43,35 @@ impl AudioManager {
     }
 
     pub async fn set_fallback(&mut self, bytes: &[u8]) {
-        if let Ok(sound) = load_sound_from_bytes(bytes).await {
-            self.fallback = Some(sound);
+        match load_sound_from_bytes(bytes).await {
+            Ok(sound) => {
+                self.fallback = Some(sound);
+                println!("✅ Fallback cargado");
+            }
+            Err(e) => println!("❌ Error fallback: {:?}", e),
         }
     }
 
     pub async fn agregar_ambiente(&mut self, escena: Escena, bytes: &[u8]) {
-        if let Ok(sound) = load_sound_from_bytes(bytes).await {
-            self.ambientes.insert(escena, sound);
+        match load_sound_from_bytes(bytes).await {
+            Ok(sound) => {
+                self.ambientes.insert(escena, sound);
+                println!("✅ Ambiente cargado: {:?}", escena);
+            }
+            Err(e) => println!("❌ Error ambiente {:?}: {:?}", escena, e),
         }
     }
 
     pub async fn agregar_efecto(&mut self, nombre: &str, bytes: &[u8]) {
-        if let Ok(sound) = load_sound_from_bytes(bytes).await {
-            self.efectos.insert(nombre.to_string(), sound);
-            if let Some(dur) = duracion_wav(bytes) {
-                self.duraciones.insert(nombre.to_string(), dur);
+        match load_sound_from_bytes(bytes).await {
+            Ok(sound) => {
+                self.efectos.insert(nombre.to_string(), sound);
+                if let Some(dur) = duracion_wav(bytes) {
+                    self.duraciones.insert(nombre.to_string(), dur);
+                }
+                println!("✅ Efecto cargado: {}", nombre);
             }
+            Err(e) => println!("❌ Error efecto {}: {:?}", nombre, e),
         }
     }
 
@@ -73,10 +84,8 @@ impl AudioManager {
         if dur > 0.1 { dur } else { 0.5 }
     }
 
-    // Reemplazar set_volumen_musica:
     pub fn set_volumen_musica(&mut self, vol: f32) {
         self.volumen_musica = vol;
-        // Actualizar sonido ambiente que esté sonando ahora
         if let Some(escena) = &self.sonido_actual {
             if let Some(sound) = self.ambientes.get(escena) {
                 set_sound_volume(sound, vol);
@@ -85,7 +94,10 @@ impl AudioManager {
             }
         }
     }
-    pub fn set_volumen_efectos(&mut self, vol: f32) { self.volumen_efectos = vol; }
+
+    pub fn set_volumen_efectos(&mut self, vol: f32) { 
+        self.volumen_efectos = vol; 
+    }
 
     pub fn update(&mut self, dt: f32) {
         let accion = match &mut self.estado {
@@ -94,8 +106,7 @@ impl AudioManager {
                 if *vol_actual <= 0.0 {
                     Some(AccionAudio::TerminarFade)
                 } else {
-                    let v = *vol_actual;
-                    Some(AccionAudio::AplicarVol(v))
+                    Some(AccionAudio::AplicarVol(*vol_actual))
                 }
             }
             EstadoAudio::EsperandoTransicion => {
@@ -158,6 +169,7 @@ impl AudioManager {
             self.sonido_actual = Some(escena);
             return;
         };
+
         play_sound(sound, PlaySoundParams {
             looped: true,
             volume: self.volumen_musica,
@@ -194,7 +206,6 @@ impl AudioManager {
         }
     }
 
-    /// Reproduce un efecto permitiendo solapamiento (para efectos cortos simultáneos)
     pub fn efecto(&self, nombre: &str) {
         if let Some(sound) = self.efectos.get(nombre) {
             play_sound(sound, PlaySoundParams {
@@ -204,7 +215,6 @@ impl AudioManager {
         }
     }
 
-    /// Reproduce un efecto deteniendo la instancia previa (evita solapamiento)
     pub fn efecto_unico(&self, nombre: &str) {
         if let Some(sound) = self.efectos.get(nombre) {
             stop_sound(sound);

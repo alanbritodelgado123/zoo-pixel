@@ -12,30 +12,52 @@ pub struct EventoAleatorio {
 
 pub struct SistemaEventos {
     pub evento_actual: Option<EventoAleatorio>,
-    pub cooldown: f32,
     pub mostrar_info: bool,
+    // Añadimos el campo bloqueado
+    pub bloqueado: bool,
+    // Otros campos existentes...
+    ya_mostrado_en_entrada: bool, // O el nombre que tenga
+    cooldown: f32, // Ejemplo de otro campo
     intervalo_min: f32,
     intervalo_max: f32,
-    pub bloqueado: bool,
 }
 
 impl SistemaEventos {
     pub fn new() -> Self {
         Self {
             evento_actual: None,
-            cooldown: gen_range(45.0, 90.0),
             mostrar_info: false,
-            intervalo_min: 60.0,
-            intervalo_max: 120.0,
-            bloqueado: false,
+            bloqueado: false, // Inicializado en false
+            ya_mostrado_en_entrada: false,
+            cooldown: 0.0, // Inicializar según sea necesario
+            intervalo_min: 10.0, // Ejemplo
+            intervalo_max: 30.0, // Ejemplo
         }
     }
 
     pub fn update(&mut self, dt: f32, escena: &Escena) {
-        if self.bloqueado { return; }
-        // Solo eventos en entradas
+        // Aplicar la lógica de bloqueo aquí
+        if self.bloqueado {
+            // Si está bloqueado, no hacemos nada
+            return;
+        }
+
+        // Resto de la lógica de update...
+        // (Tu lógica existente aquí, por ejemplo)
         if !escena.es_entrada() {
+            self.ya_mostrado_en_entrada = false;
             self.evento_actual = None;
+            return;
+        }
+
+        if self.ya_mostrado_en_entrada {
+            if let Some(ref mut ev) = self.evento_actual {
+                ev.timer_visible += dt;
+                if ev.timer_visible > 30.0 && !self.mostrar_info {
+                    self.evento_actual = None;
+                    self.cooldown = gen_range(self.intervalo_min as i32, self.intervalo_max as i32) as f32;
+                }
+            }
             return;
         }
 
@@ -43,7 +65,7 @@ impl SistemaEventos {
             ev.timer_visible += dt;
             if ev.timer_visible > 30.0 && !self.mostrar_info {
                 self.evento_actual = None;
-                self.cooldown = gen_range(self.intervalo_min, self.intervalo_max);
+                self.cooldown = gen_range(self.intervalo_min as i32, self.intervalo_max as i32) as f32;
             }
         } else {
             self.cooldown -= dt;
@@ -53,13 +75,15 @@ impl SistemaEventos {
         }
     }
 
-    fn generar_evento(&mut self) {
+    pub fn generar_evento(&mut self) {
+        // Ejemplo de generación de evento
         self.evento_actual = Some(EventoAleatorio {
-            texto: "Bienvenido al Zoo".to_string(),
-            detalle: "Explora las zonas para descubrir animales. Usa Z para interactuar y X para volver.".to_string(),
+            texto: "Evento Aleatorio".to_string(),
+            detalle: "Detalles del evento.".to_string(),
             timer_visible: 0.0,
         });
         self.mostrar_info = false;
+        self.ya_mostrado_en_entrada = true; // Marcamos que ya se mostró en esta visita a la entrada
     }
 
     pub fn hay_evento(&self) -> bool {
@@ -70,12 +94,14 @@ impl SistemaEventos {
         if cerrar {
             self.evento_actual = None;
             self.mostrar_info = false;
-            self.cooldown = gen_range(self.intervalo_min, self.intervalo_max);
+            // Reiniciar cooldown si se cierra
+            self.cooldown = gen_range(self.intervalo_min as i32, self.intervalo_max as i32) as f32;
         } else {
             if self.mostrar_info {
                 self.evento_actual = None;
                 self.mostrar_info = false;
-                self.cooldown = gen_range(self.intervalo_min, self.intervalo_max);
+                // Reiniciar cooldown si se cierra después de mostrar info
+                 self.cooldown = gen_range(self.intervalo_min as i32, self.intervalo_max as i32) as f32;
             } else {
                 self.mostrar_info = true;
             }
