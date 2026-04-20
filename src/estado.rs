@@ -135,7 +135,7 @@ impl Estado {
         let escena = save.escena.unwrap_or(Escena::E);
         visitadas.insert(escena);
         
-        // ✅ Verificar si ya vio la intro
+        // ✅ Verificar si ya vio intro
         let ya_vio_intro = save.animales_vistos.len() > 0 || save.visitadas.len() > 1;
         
         let menu_config = MenuConfig::new(&save);
@@ -192,6 +192,7 @@ impl Estado {
             Pantalla::Intro => {
                 self.intro_timer += dt;
                 self.dialogo.update(dt);
+                // ✅ FIX: Transición automática cuando diálogo completa
                 if !self.dialogo.activo && self.dialogo.completado {
                     self.pantalla = Pantalla::Juego;
                     self.ya_vio_intro = true;
@@ -231,7 +232,7 @@ impl Estado {
         }
     }
     
-    // ✅ Verificar si debe mostrar diálogo de callejón
+    // ✅ NUEVA: Verificar diálogos de callejones
     fn verificar_dialogo_callejon(&mut self, db: &ZooDB) {
         let escena_id = self.escena.db_id();
         if escena_id.ends_with("_5") && !self.dialogo.activo {
@@ -316,6 +317,7 @@ impl Estado {
                 if self.dialogo.activo {
                     if accion == Accion::BotonA || accion == Accion::BotonB {
                         self.dialogo.avanzar();
+                        // ✅ FIX: Si completó diálogo y es intro, cambiar a Juego
                         if !self.dialogo.activo && self.dialogo.completado && !self.ya_vio_intro {
                             self.pantalla = Pantalla::Juego;
                             self.ya_vio_intro = true;
@@ -606,7 +608,7 @@ impl Estado {
                         }
                         
                         if self.escena.es_pesca() {
-                            self.pesca.iniciar(db);
+                            self.pesca.iniciar(&db);
                             return;
                         }
                         if self.escena.es_entrada() { return; }

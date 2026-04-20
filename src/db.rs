@@ -10,7 +10,7 @@ pub struct Animal {
     pub nombre_comun: String,
     pub nombre_cientifico: String,
     pub descripcion: String,
-    pub categoria: String,  // NUEVO: anfibios, aves, fosiles, insectos, mamiferos, peces, primates, reptiles
+    pub categoria: String,
 }
 
 #[derive(Debug, Clone)]
@@ -20,6 +20,17 @@ pub struct DialogoDB {
     pub personaje: String,
     pub orden: i32,
     pub texto: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct QuizPreguntaDB {
+    pub id: i64,
+    pub pregunta: String,
+    pub opcion_a: String,
+    pub opcion_b: String,
+    pub opcion_c: String,
+    pub opcion_d: String,
+    pub correcta: usize,
 }
 
 pub struct ZooDB {
@@ -51,10 +62,20 @@ impl ZooDB {
             orden INTEGER NOT NULL,
             texto TEXT NOT NULL
         );
+        CREATE TABLE quiz_museo (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pregunta TEXT NOT NULL,
+            opcion_a TEXT NOT NULL,
+            opcion_b TEXT NOT NULL,
+            opcion_c TEXT NOT NULL,
+            opcion_d TEXT NOT NULL,
+            correcta INTEGER NOT NULL
+        );
         ").expect("Error creando tablas");
         let db = Self { conn };
         db.poblar();
         db.poblar_dialogos();
+        db.poblar_quiz_museo();
         db
     }
 
@@ -76,11 +97,11 @@ impl ZooDB {
             ("z4_1", "Sierra de Perijá I"), ("z4_2", "Parque Nacional Canaima"),
             ("z4_3", "Delta del Orinoco I"), ("z4_4", "Delta del Orinoco II"),
             ("z4_5", "Río Orinoco"),
-            ("z5_1", "Península de Paria"),  // MUSEO AQUÍ
-            ("z5_2", "Isla de Margarita"),   // PESCA = mismos animales
+            ("z5_1", "Península de Paria"),
+            ("z5_2", "Isla de Margarita"),
             ("z5_3", "Costa Caribe Oriental"),
             ("z5_4", "Los Roques"),
-            ("z5_5", "Lago de Maracaibo"),   // FOTO AQUÍ
+            ("z5_5", "Lago de Maracaibo"),
         ];
         for (id, nombre) in zonas {
             self.conn.execute(
@@ -89,7 +110,7 @@ impl ZooDB {
             ).unwrap();
         }
 
-        // ANIMALES CON CATEGORÍA Y TILDES
+        // ✅ TUS 117 ANIMALES (conserva todos)
         let animales: &[(&str, &str, &str, &str, &str)] = &[
             // ========== ZONA 1: Llanos Centrales ==========
             ("z1_1", "Chigüire", "Hydrochoerus hydrochaeris",
@@ -430,58 +451,103 @@ impl ZooDB {
         }
     }
 
-fn poblar_dialogos(&self) {
-    let dialogos: &[(&str, &str, i32, &str)] = &[
-        // Bienvenida - guía principal (ELI)
-        ("bienvenida", "Guía Eli", 1,
-         "¡Bienvenido al Zoológico Nacional de Venezuela! Soy Eli, tu guía personal."),
-        ("bienvenida", "Guía Eli", 2,
-         "Aquí conocerás la increíble fauna de Venezuela, desde los llanos hasta las montañas andinas."),
-        ("bienvenida", "Guía Eli", 3,
-         "Usa las flechas para moverte entre las zonas. Cada una representa un ecosistema diferente."),
-        ("bienvenida_teclado", "Guía Eli", 4,
-         "Presiona Z para explorar y ver los animales. Con X puedes volver atrás."),
-        ("bienvenida_tactil", "Guía Eli", 4,
-         "Toca el botón A para explorar y ver los animales. Con B puedes volver atrás."),
-        ("bienvenida", "Guía Eli", 5,
-         "Tienes una libreta de campo donde se guardan automáticamente los animales que descubras."),
-        ("bienvenida", "Guía Eli", 6,
-         "El mapa te ayudará a orientarte. Puedes abrirlo presionando M en cualquier momento."),
-        ("bienvenida", "Guía Eli", 7,
-         "¡Venezuela tiene una biodiversidad increíble: más de 1400 especies de aves!"),
-        ("bienvenida", "Guía Eli", 8,
-         "¡Explora las 25 zonas del parque! Buena suerte en tu expedición."),
-        
-        // Museo - guía Ani
-        ("museo_bienvenida", "Guía Ani", 1,
-         "¡Hola! Soy Ani, tu guía en el Museo Paleontológico de Paria."),
-        ("museo_bienvenida", "Guía Ani", 2,
-         "Aquí podrás explorar exhibiciones de fósiles, excavar y poner a prueba tu conocimiento."),
-        ("museo_bienvenida", "Guía Ani", 3,
-         "Usa Z para seleccionar y excavar. ¡Encuentra los fósiles escondidos!"),
-        
-        // Eventos aleatorios
-        ("evento_cria", "Cuidador", 1,
-         "¡Mira! Ha nacido una cría en esta zona. La madre la protege con mucho cuidado."),
-        ("evento_alimentacion", "Cuidador", 1,
-         "Es hora de la alimentación. Los animales ya reconocen esta rutina."),
-        ("evento_enriquecimiento", "Veterinaria", 1,
-         "Estamos haciendo enriquecimiento ambiental para mantenerlos activos."),
-        ("evento_dato", "Guía Eli", 1,
-         "¿Sabías que Venezuela es el sexto país con mayor diversidad de aves del mundo?"),
-        ("evento_lluvia", "Guía Eli", 1,
-         "Parece que va a llover. Observa cómo algunos animales se refugian."),
-        ("evento_conservacion", "Bióloga", 1,
-         "Muchas especies que ves aquí están en peligro. Participamos en programas de conservación."),
-    ];
-    for (contexto, personaje, orden, texto) in dialogos {
-        self.conn.execute(
-            "INSERT INTO dialogos (contexto, personaje, orden, texto)
-            VALUES (?1, ?2, ?3, ?4)",
-            params![contexto, personaje, orden, texto],
-        ).unwrap();
+    fn poblar_dialogos(&self) {
+        let dialogos: &[(&str, &str, i32, &str)] = &[
+            // Bienvenida - guía principal (ELI)
+            ("bienvenida", "Guía Eli", 1,
+             "¡Bienvenido al Zoológico Nacional de Venezuela! Soy Eli, tu guía personal."),
+            ("bienvenida", "Guía Eli", 2,
+             "Aquí conocerás la increíble fauna de Venezuela, desde los llanos hasta las montañas andinas."),
+            ("bienvenida", "Guía Eli", 3,
+             "Usa las flechas para moverte entre las zonas. Cada una representa un ecosistema diferente."),
+            ("bienvenida_teclado", "Guía Eli", 4,
+             "Presiona Z para explorar y ver los animales. Con X puedes volver atrás."),
+            ("bienvenida_tactil", "Guía Eli", 4,
+             "Toca el botón A para explorar y ver los animales. Con B puedes volver atrás."),
+            ("bienvenida", "Guía Eli", 5,
+             "Tienes una libreta de campo donde se guardan automáticamente los animales que descubras."),
+            ("bienvenida", "Guía Eli", 6,
+             "El mapa te ayudará a orientarte. Puedes abrirlo presionando M en cualquier momento."),
+            ("bienvenida", "Guía Eli", 7,
+             "¡Venezuela tiene una biodiversidad increíble: más de 1400 especies de aves!"),
+            ("bienvenida", "Guía Eli", 8,
+             "¡Explora las 25 zonas del parque! Buena suerte en tu expedición."),
+            
+            // Museo - guía Ani
+            ("museo_bienvenida", "Guía Ani", 1,
+             "¡Hola! Soy Ani, tu guía en el Museo Paleontológico de Paria."),
+            ("museo_bienvenida", "Guía Ani", 2,
+             "Aquí podrás explorar exhibiciones de fósiles, excavar y poner a prueba tu conocimiento."),
+            ("museo_bienvenida", "Guía Ani", 3,
+             "Usa Z para seleccionar y excavar. ¡Encuentra los fósiles escondidos!"),
+            
+            // ✅ CALLEJONES Zx-5 (fin de sección)
+            ("callejon_z1_5", "Guía Eli", 1,
+             "Has llegado al final de los Llanos."),
+            ("callejon_z1_5", "Guía Eli", 2,
+             "Regresa a los pasillos para explorar más zonas."),
+            ("callejon_z2_5", "Guía Eli", 1,
+             "¡Qué vistas de los Andes!"),
+            ("callejon_z2_5", "Guía Eli", 2,
+             "Este es el punto más alto del zoo."),
+            ("callejon_z3_5", "Guía Eli", 1,
+             "Te adentraste profundo en la Amazonía."),
+            ("callejon_z3_5", "Guía Eli", 2,
+             "La selva es vasta, pero hay más por descubrir."),
+            ("callejon_z4_5", "Guía Eli", 1,
+             "El Delta del Orinoco es impresionante."),
+            ("callejon_z4_5", "Guía Eli", 2,
+             "Navega de regreso cuando estés listo."),
+            ("callejon_z5_5", "Guía Eli", 1,
+             "¡Las costas venezolanas!"),
+            ("callejon_z5_5", "Guía Eli", 2,
+             "¿Listo para explorar más? ¡Vuelve a los pasillos!"),
+            
+            // Eventos aleatorios
+            ("evento_cria", "Cuidador", 1,
+             "¡Mira! Ha nacido una cría en esta zona. La madre la protege con mucho cuidado."),
+            ("evento_alimentacion", "Cuidador", 1,
+             "Es hora de la alimentación. Los animales ya reconocen esta rutina."),
+            ("evento_enriquecimiento", "Veterinaria", 1,
+             "Estamos haciendo enriquecimiento ambiental para mantenerlos activos."),
+            ("evento_dato", "Guía Eli", 1,
+             "¿Sabías que Venezuela es el sexto país con mayor diversidad de aves del mundo?"),
+            ("evento_lluvia", "Guía Eli", 1,
+             "Parece que va a llover. Observa cómo algunos animales se refugian."),
+            ("evento_conservacion", "Bióloga", 1,
+             "Muchas especies que ves aquí están en peligro. Participamos en programas de conservación."),
+        ];
+        for (contexto, personaje, orden, texto) in dialogos {
+            self.conn.execute(
+                "INSERT INTO dialogos (contexto, personaje, orden, texto)
+                VALUES (?1, ?2, ?3, ?4)",
+                params![contexto, personaje, orden, texto],
+            ).unwrap();
+        }
     }
-}
+
+    // ✅ NUEVO: Preguntas del museo en DB
+    fn poblar_quiz_museo(&self) {
+        let quiz: &[(&str, &str, &str, &str, &str, usize)] = &[
+            ("¿En qué era vivió el Carnotauro?",
+             "Jurásico", "Cretácico Superior", "Triásico", "Pérmico", 1),
+            ("¿Qué característica tenía el Pteranodon?",
+             "Cuernos", "Cola larga", "No tenía dientes", "Plumas", 2),
+            ("¿Cuánto podía medir un Megalodon?",
+             "5 metros", "10 metros", "18 metros", "25 metros", 2),
+            ("¿Los ammonites estaban emparentados con...?",
+             "Estrellas de mar", "Nautilus", "Corales", "Medusas", 1),
+            ("¿De qué estaban hechos los ojos de los trilobites?",
+             "Queratina", "Cristal de calcita", "Cartílago", "Sílice", 1),
+        ];
+        for (preg, a, b, c, d, correcta) in quiz {
+            self.conn.execute(
+                "INSERT INTO quiz_museo (pregunta, opcion_a, opcion_b, opcion_c, opcion_d, correcta)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![preg, a, b, c, d, correcta],
+            ).unwrap();
+        }
+    }
 
     pub fn animales_zona(&self, escena: &Escena) -> Vec<Animal> {
         let mut stmt = self.conn.prepare(
@@ -500,7 +566,6 @@ fn poblar_dialogos(&self) {
         }).unwrap().filter_map(|r| r.ok()).collect()
     }
 
-    // NUEVO: Animales por categoría
     pub fn animales_por_categoria(&self, categoria: &str) -> Vec<Animal> {
         let mut stmt = self.conn.prepare(
             "SELECT a.id, a.zona_id, a.nombre_comun, a.nombre_cientifico, a.descripcion, a.categoria
@@ -558,6 +623,25 @@ fn poblar_dialogos(&self) {
     pub fn dialogos_evento(&self, tipo: &str) -> Vec<DialogoDB> {
         let ctx = format!("evento_{}", tipo);
         self.dialogos_por_contexto(&ctx)
+    }
+
+    // ✅ NUEVO: Quiz desde DB
+    pub fn quiz_museo_preguntas(&self) -> Vec<QuizPreguntaDB> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, pregunta, opcion_a, opcion_b, opcion_c, opcion_d, correcta
+             FROM quiz_museo ORDER BY RANDOM()"
+        ).unwrap();
+        stmt.query_map([], |row| {
+            Ok(QuizPreguntaDB {
+                id: row.get(0)?,
+                pregunta: row.get(1)?,
+                opcion_a: row.get(2)?,
+                opcion_b: row.get(3)?,
+                opcion_c: row.get(4)?,
+                opcion_d: row.get(5)?,
+                correcta: row.get(6)?,
+            })
+        }).unwrap().filter_map(|r| r.ok()).collect()
     }
 
     pub fn animal_por_nombre(&self, nombre: &str) -> Option<Animal> {
