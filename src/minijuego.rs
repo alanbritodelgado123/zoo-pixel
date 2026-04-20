@@ -76,7 +76,7 @@ impl MinijuegoPesca {
     }
 
 fn generar_pez(&self) -> PezInfo {
-    // ✅ PECES REALES DE ISLA DE MARGARITA
+    // ✅ SOLO PECES REALES DE AGUAS VENEZOLANAS
     let peces = vec![
         PezInfo {
             nombre: "Pavón".into(),
@@ -107,6 +107,24 @@ fn generar_pez(&self) -> PezInfo {
             cientifico: "Caranx hippos".into(),
             descripcion: "Pez rápido y agresivo de aguas costeras. Color plateado con manchas oscuras. Muy común en Isla de Margarita.".into(),
             peso_kg: gen_range(3.0, 15.0),
+        },
+        PezInfo {
+            nombre: "Corocoro".into(),
+            cientifico: "Micropogonias furnieri".into(),
+            descripcion: "Pez costero de la familia de los corvinas. Muy apreciado en la cocina venezolana. Color plateado con reflejos dorados.".into(),
+            peso_kg: gen_range(1.0, 5.0),
+        },
+        PezInfo {
+            nombre: "Lisa".into(),
+            cientifico: "Mugil cephalus".into(),
+            descripcion: "Pez costero que entra en lagunas y estuarios. Cuerpo alargado plateado. Muy común en la costa venezolana.".into(),
+            peso_kg: gen_range(1.0, 4.0),
+        },
+        PezInfo {
+            nombre: "Sardina".into(),
+            cientifico: "Sardinella aurita".into(),
+            descripcion: "Pez pequeño de cardumen, base de la pesca artesanal. Color plateado azulado. Importante para la economía local.".into(),
+            peso_kg: gen_range(0.1, 0.3),
         },
     ];
     peces[gen_range(0, peces.len())].clone()
