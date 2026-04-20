@@ -128,48 +128,51 @@ impl Escena {
         }
     }
 
-    pub fn conexiones(&self) -> [Option<Escena>; 4] {
-        use Escena::*;
-        match self {
-            // E solo conecta con P3 (arriba)
-            E => [Some(P3), None, None, None],
-            
-            // ✅ CORREGIDO: Solo P3 conecta con E
-            // [Arriba, Abajo, Izquierda, Derecha]
-            P1 => [Some(Z1_1), None, None, Some(P2)],
-            P2 => [Some(Z2_1), None, Some(P1), Some(P3)],
-            P3 => [Some(Z3_1), Some(E), Some(P2), Some(P4)],  // ← ÚNICO con acceso a E
-            P4 => [Some(Z4_1), None, Some(P3), Some(P5)],
-            P5 => [Some(Z5_1), None, Some(P4), None],
-            
-            // Zonas (todas igual)
-            Z1_1 => [Some(Z1_2), Some(P1), None, None],
-            Z1_2 => [Some(Z1_3), Some(Z1_1), None, None],
-            Z1_3 => [Some(Z1_4), Some(Z1_2), None, None],
-            Z1_4 => [Some(Z1_5), Some(Z1_3), None, None],
-            Z1_5 => [None, Some(Z1_4), None, None],
-            Z2_1 => [Some(Z2_2), Some(P2), None, None],
-            Z2_2 => [Some(Z2_3), Some(Z2_1), None, None],
-            Z2_3 => [Some(Z2_4), Some(Z2_2), None, None],
-            Z2_4 => [Some(Z2_5), Some(Z2_3), None, None],
-            Z2_5 => [None, Some(Z2_4), None, None],
-            Z3_1 => [Some(Z3_2), Some(P3), None, None],
-            Z3_2 => [Some(Z3_3), Some(Z3_1), None, None],
-            Z3_3 => [Some(Z3_4), Some(Z3_2), None, None],
-            Z3_4 => [Some(Z3_5), Some(Z3_3), None, None],
-            Z3_5 => [None, Some(Z3_4), None, None],
-            Z4_1 => [Some(Z4_2), Some(P4), None, None],
-            Z4_2 => [Some(Z4_3), Some(Z4_1), None, None],
-            Z4_3 => [Some(Z4_4), Some(Z4_2), None, None],
-            Z4_4 => [Some(Z4_5), Some(Z4_3), None, None],
-            Z4_5 => [None, Some(Z4_4), None, None],
-            Z5_1 => [Some(Z5_2), Some(P5), None, None],
-            Z5_2 => [Some(Z5_3), Some(Z5_1), None, None],
-            Z5_3 => [Some(Z5_4), Some(Z5_2), None, None],
-            Z5_4 => [Some(Z5_5), Some(Z5_3), None, None],
-            Z5_5 => [None, Some(Z5_4), None, None],
-        }
+
+
+pub fn conexiones(&self) -> [Option<Escena>; 4] {
+    use Escena::*;
+    match self {
+        // E solo conecta con P3 (arriba)
+        E => [Some(P3), None, None, None],
+        
+        // ✅ CORREGIDO: Solo P3 conecta con E (índice 1 = Abajo)
+        // [Arriba, Abajo, Izquierda, Derecha]
+        P1 => [Some(Z1_1), None, None, Some(P2)],
+        P2 => [Some(Z2_1), None, Some(P1), Some(P3)],
+        P3 => [Some(Z3_1), Some(E), Some(P2), Some(P4)],  // ← ÚNICO con acceso a E
+        P4 => [Some(Z4_1), None, Some(P3), Some(P5)],
+        P5 => [Some(Z5_1), None, Some(P4), None],
+        
+        // Zonas (todas igual)
+        Z1_1 => [Some(Z1_2), Some(P1), None, None],
+        Z1_2 => [Some(Z1_3), Some(Z1_1), None, None],
+        Z1_3 => [Some(Z1_4), Some(Z1_2), None, None],
+        Z1_4 => [Some(Z1_5), Some(Z1_3), None, None],
+        Z1_5 => [None, Some(Z1_4), None, None],
+        Z2_1 => [Some(Z2_2), Some(P2), None, None],
+        Z2_2 => [Some(Z2_3), Some(Z2_1), None, None],
+        Z2_3 => [Some(Z2_4), Some(Z2_2), None, None],
+        Z2_4 => [Some(Z2_5), Some(Z2_3), None, None],
+        Z2_5 => [None, Some(Z2_4), None, None],
+        Z3_1 => [Some(Z3_2), Some(P3), None, None],
+        Z3_2 => [Some(Z3_3), Some(Z3_1), None, None],
+        Z3_3 => [Some(Z3_4), Some(Z3_2), None, None],
+        Z3_4 => [Some(Z3_5), Some(Z3_3), None, None],
+        Z3_5 => [None, Some(Z3_4), None, None],
+        Z4_1 => [Some(Z4_2), Some(P4), None, None],
+        Z4_2 => [Some(Z4_3), Some(Z4_1), None, None],
+        Z4_3 => [Some(Z4_4), Some(Z4_2), None, None],
+        Z4_4 => [Some(Z4_5), Some(Z4_3), None, None],
+        Z4_5 => [None, Some(Z4_4), None, None],
+        Z5_1 => [Some(Z5_2), Some(P5), None, None],
+        Z5_2 => [Some(Z5_3), Some(Z5_1), None, None],
+        Z5_3 => [Some(Z5_4), Some(Z5_2), None, None],
+        Z5_4 => [Some(Z5_5), Some(Z5_3), None, None],
+        Z5_5 => [None, Some(Z5_4), None, None],
     }
+}
+
 
     pub fn color_fondo(&self) -> Color {
         match self.tipo() {

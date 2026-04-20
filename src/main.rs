@@ -40,14 +40,15 @@ fn window_conf() -> Conf {
 async fn main() {
     let db = ZooDB::new();
     
-    // ✅ Rutas desde la raíz del proyecto (donde está Cargo.toml)
+    // ✅ Rutas correctas: include_bytes! es relativo al archivo (src/), por eso ../
     let font_bytes = include_bytes!("../assets/fonts/PressStart2P.ttf");
     let font = load_ttf_font_from_bytes(font_bytes).expect("No se pudo cargar la fuente");
     
+    // ✅ Spritesheet 640x480 por frame
     let spritesheet_bytes = include_bytes!("../assets/fondos/spritesheet_vertical.png");
     let fondos = Fondos::new(spritesheet_bytes, 640.0, 480.0);
     
-    // ✅ Cargar íconos de categoría
+    // ✅ Cargar íconos de categoría (SIN TILDE en el nombre del archivo)
     let mut iconos_categoria: HashMap<String, Texture2D> = HashMap::new();
     let categorias = [
         ("anfibios", "anfibios_inspyrenet.png"),
@@ -126,11 +127,18 @@ async fn main() {
     
     println!("🎮 Zoo Pixel iniciado correctamente");
     println!("📍 Escena inicial: {:?}", estado.escena);
+    println!("📐 Resolución: {}x{}", screen_width(), screen_height());
     
     loop {
         let dt = get_frame_time().min(0.1);
         
+        // Input PC
         for accion in input::leer_teclado() {
+            estado.procesar_accion(accion, &db);
+        }
+        
+        // ✅ Input Android (táctil)
+        for accion in input::leer_tactil(&estado) {
             estado.procesar_accion(accion, &db);
         }
         
@@ -157,6 +165,7 @@ async fn main() {
         
         ui.render(&estado, &fondos);
         
+        // ✅ Overlay de controles en PC
         let mostrar_overlay_pc = estado.mostrar_overlay
             && !cfg!(target_os = "android")
             && !estado.en_pantalla_info()
@@ -168,6 +177,7 @@ async fn main() {
             render_pc_overlay(&estado, &ui.font);
         }
         
+        // ✅ Filtro CRT
         let crt_activo = if matches!(estado.pantalla, Pantalla::Config) {
             estado.menu_config.crt
         } else {

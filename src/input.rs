@@ -34,18 +34,18 @@ pub fn leer_teclado() -> Vec<Accion> {
 // ✅ NUEVO: Input táctil para Android (landscape)
 pub fn leer_tactil(estado: &Estado) -> Vec<Accion> {
     let mut acciones = Vec::new();
-    let touches = touches();
     
     if !estado.plataforma.es_movil() {
         return acciones;
     }
     
+    let touches = touches();
     let sw = screen_width();
     let sh = screen_height();
     
     // Zonas de botones en landscape (800x480)
-    let btn_size = sh * 0.15;
-    let margin = sh * 0.05;
+    let btn_size = sh * 0.12;
+    let margin = sh * 0.04;
     
     for touch in touches {
         let x = touch.position.x;

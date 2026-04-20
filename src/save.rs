@@ -29,11 +29,10 @@ impl Default for ConfigGuardada {
 
 const SAVE_FILE: &str = "zoo_save.json";
 
-// ✅ Función para obtener ruta de guardado apropiada
+// ✅ Función para obtener ruta de guardado apropiada por plataforma
 fn get_save_path() -> String {
     if cfg!(target_os = "android") {
-        // En Android, guardar en directorio interno de la app
-        // macroquad usa el directorio de assets por defecto
+        // En Android, el directorio actual es el interno de la app
         SAVE_FILE.to_string()
     } else {
         // En PC, guardar en directorio actual
