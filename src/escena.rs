@@ -131,13 +131,18 @@ impl Escena {
     pub fn conexiones(&self) -> [Option<Escena>; 4] {
         use Escena::*;
         match self {
+            // E solo conecta con P3 (arriba)
             E => [Some(P3), None, None, None],
-            // ✅ BUG FIX: P2 ahora puede bajar a E (índice 1 = Some(E))
-            P1 => [Some(Z1_1), Some(E), None, Some(P2)],
-            P2 => [Some(Z2_1), Some(E), Some(P1), Some(P3)],
-            P3 => [Some(Z3_1), Some(E), Some(P2), Some(P4)],
-            P4 => [Some(Z4_1), Some(E), Some(P3), Some(P5)],
-            P5 => [Some(Z5_1), Some(E), Some(P4), None],
+            
+            // ✅ CORREGIDO: Solo P3 conecta con E
+            // [Arriba, Abajo, Izquierda, Derecha]
+            P1 => [Some(Z1_1), None, None, Some(P2)],
+            P2 => [Some(Z2_1), None, Some(P1), Some(P3)],
+            P3 => [Some(Z3_1), Some(E), Some(P2), Some(P4)],  // ← ÚNICO con acceso a E
+            P4 => [Some(Z4_1), None, Some(P3), Some(P5)],
+            P5 => [Some(Z5_1), None, Some(P4), None],
+            
+            // Zonas (todas igual)
             Z1_1 => [Some(Z1_2), Some(P1), None, None],
             Z1_2 => [Some(Z1_3), Some(Z1_1), None, None],
             Z1_3 => [Some(Z1_4), Some(Z1_2), None, None],
