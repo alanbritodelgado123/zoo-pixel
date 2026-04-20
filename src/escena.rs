@@ -208,20 +208,20 @@ pub fn conexiones(&self) -> [Option<Escena>; 4] {
 
 pub fn icono_categoria(&self) -> &'static str {
     match self {
-        // ✅ ESPECÍFICOS PRIMERO (antes que los generales)
+        // ✅ ESPECÍFICOS PRIMERO (sin duplicados)
         Self::Z5_1 => "fosiles",
-        Self::Z3_5 | Self::Z4_2 => "anfibios",
+        Self::Z3_5 | Self::Z4_2 => "anfibios",  // ← Z4_2 aquí
         Self::Z3_2 => "insectos",
-        Self::Z2_3 | Self::Z3_1 | Self::Z3_4 | Self::Z4_1 | Self::Z4_3 => "primates",
+        Self::Z2_3 | Self::Z3_1 | Self::Z3_4 | Self::Z4_1 => "primates",  // ← Z4_3 REMOVIDO
         
         // ✅ LUEGO LOS GENERALES
         Self::Z1_4 | Self::Z5_4 => "reptiles",
         Self::Z1_3 | Self::Z4_5 => "peces",
         Self::Z1_2 | Self::Z2_2 | Self::Z3_3 | Self::Z4_4 | Self::Z5_3 | Self::Z5_5 => "aves",
         
-        // ✅ DEFAULT AL FINAL
-        Self::Z1_1 | Self::Z1_5 | Self::Z2_1 | Self::Z2_5 | 
-        Self::Z4_2 | Self::Z4_3 | Self::Z5_2 => "mamiferos",
+        // ✅ DEFAULT AL FINAL (Z4_2 ya está arriba, Z4_3 va aquí)
+        Self::Z1_1 | Self::Z1_5 | Self::Z2_1 | Self::Z2_5 |
+        Self::Z4_3 | Self::Z5_2 => "mamiferos",  // ← Z4_2 REMOVIDO, Z4_3 aquí
         
         _ => "mamiferos",
     }

@@ -75,42 +75,42 @@ impl MinijuegoPesca {
         self.texto_terminado = false;
     }
 
-    fn generar_pez(&self) -> PezInfo {
-        // Mismos animales que Z5-2 (Isla de Margarita)
-        let peces = vec![
-            PezInfo {
-                nombre: "Venado de Margarita".into(),
-                cientifico: "Odocoileus virginianus margaritae".into(),
-                descripcion: "Subespecie endémica de Isla de Margarita. Más pequeño que venados continentales. Adaptado a clima árido insular. En peligro crítico, quedan menos de 200.".into(),
-                peso_kg: gen_range(30.0, 50.0),
-            },
-            PezInfo {
-                nombre: "Cotorra Margariteña".into(),
-                cientifico: "Amazona barbadensis".into(),
-                descripcion: "Loro endémico de zonas áridas. Plumaje verde con frente amarilla. En peligro por tráfico ilegal. Se alimenta de semillas de cactus.".into(),
-                peso_kg: gen_range(0.3, 0.5),
-            },
-            PezInfo {
-                nombre: "Ñangaro".into(),
-                cientifico: "Psittacara wagleri".into(),
-                descripcion: "Perico de frente roja. Ruidoso y gregario. Habita bosques secos y zonas cultivadas. Se alimenta de frutas y semillas. Forma bandadas grandes.".into(),
-                peso_kg: gen_range(0.2, 0.4),
-            },
-            PezInfo {
-                nombre: "Cunaguaro de Margarita".into(),
-                cientifico: "Leopardus pardalis pardalis".into(),
-                descripcion: "Subespecie de ocelote de Isla de Margarita. Patrón de manchas único. Cazador nocturno solitario. En peligro por habitat limitado insular.".into(),
-                peso_kg: gen_range(8.0, 16.0),
-            },
-            PezInfo {
-                nombre: "Pavón".into(),
-                cientifico: "Cichla temensis".into(),
-                descripcion: "Depredador de agua dulce, puede pesar hasta 15 kg. Muy combativo al ser pescado. Color verde-dorado con manchas oscuras características.".into(),
-                peso_kg: gen_range(3.0, 15.0),
-            },
-        ];
-        peces[gen_range(0, peces.len())].clone()
-    }
+fn generar_pez(&self) -> PezInfo {
+    // ✅ PECES REALES DE ISLA DE MARGARITA
+    let peces = vec![
+        PezInfo {
+            nombre: "Pavón".into(),
+            cientifico: "Cichla temensis".into(),
+            descripcion: "Depredador de agua dulce, puede pesar hasta 15 kg. Muy combativo al ser pescado. Color verde-dorado con manchas oscuras características.".into(),
+            peso_kg: gen_range(3.0, 15.0),
+        },
+        PezInfo {
+            nombre: "Pez Loro".into(),
+            cientifico: "Scarus guacamaia".into(),
+            descripcion: "Pez loro más grande del Atlántico, hasta 1.2 metros. Se alimenta de coral y algas. Colorido con tonos verdes, azules y rosados.".into(),
+            peso_kg: gen_range(5.0, 20.0),
+        },
+        PezInfo {
+            nombre: "Mero".into(),
+            cientifico: "Epinephelus itajara".into(),
+            descripcion: "Pez de arrecife de gran tamaño, puede superar los 2 metros. Solitario y territorial. En peligro crítico de extinción.".into(),
+            peso_kg: gen_range(50.0, 200.0),
+        },
+        PezInfo {
+            nombre: "Pargo".into(),
+            cientifico: "Lutjanus analis".into(),
+            descripcion: "Pez de arrecife muy apreciado en pesca deportiva. Color plateado con aletas rojizas. Vive en cardúmenes.".into(),
+            peso_kg: gen_range(2.0, 10.0),
+        },
+        PezInfo {
+            nombre: "Jurel".into(),
+            cientifico: "Caranx hippos".into(),
+            descripcion: "Pez rápido y agresivo de aguas costeras. Color plateado con manchas oscuras. Muy común en Isla de Margarita.".into(),
+            peso_kg: gen_range(3.0, 15.0),
+        },
+    ];
+    peces[gen_range(0, peces.len())].clone()
+}
 
     pub fn update(&mut self, dt: f32) {
         if !self.activo { return; }

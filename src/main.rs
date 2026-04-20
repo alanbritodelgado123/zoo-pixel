@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-use macroquad::prelude::*;
-
 mod animacion;
 mod audio;
 mod ciclo_dia;
@@ -24,13 +21,15 @@ use estado::{Estado, Pantalla};
 use fondo::Fondos;
 use ui::UiRenderer;
 use escena::Escena;
+use macroquad::prelude::*;
+use std::collections::HashMap;
 
 fn window_conf() -> Conf {
     Conf {
         window_title: "Zoo Pixel".to_owned(),
-        window_width: 800,   // ✅ Landscape: ancho > alto
+        window_width: 800,
         window_height: 480,
-        window_resizable: !cfg!(target_os = "android"),  // ✅ PC: sí, Android: no
+        window_resizable: !cfg!(target_os = "android"),
         high_dpi: true,
         ..Default::default()
     }
@@ -40,92 +39,104 @@ fn window_conf() -> Conf {
 async fn main() {
     let db = ZooDB::new();
     
-    // ✅ Rutas correctas: include_bytes! es relativo al archivo (src/), por eso ../
+    // ✅ FUENTE: include_bytes!
     let font_bytes = include_bytes!("../assets/fonts/PressStart2P.ttf");
     let font = load_ttf_font_from_bytes(font_bytes).expect("No se pudo cargar la fuente");
     
-    // ✅ Spritesheet 640x480 por frame
+    // ✅ SPRITESHEET: include_bytes!
     let spritesheet_bytes = include_bytes!("../assets/fondos/spritesheet_vertical.png");
     let fondos = Fondos::new(spritesheet_bytes, 640.0, 480.0);
     
-    // ✅ Cargar íconos de categoría (SIN TILDE en el nombre del archivo)
+    // ✅ ÍCONOS DE CATEGORÍA: Cargar CADA UNO individualmente
+    // NO usar array fijo porque cada PNG tiene tamaño diferente
     let mut iconos_categoria: HashMap<String, Texture2D> = HashMap::new();
-    let categorias = [
-        ("anfibios", "anfibios_inspyrenet.png"),
-        ("aves", "aves_inspyrenet.png"),
-        ("fosiles", "fosiles_inspyrenet.png"),  // ✅ SIN TILDE
-        ("insectos", "insectos_inspyrenet.png"),
-        ("mamiferos", "mamiferos_inspyrenet.png"),
-        ("peces", "peces_inspyrenet.png"),
-        ("primates", "primates_inspyrenet.png"),
-        ("reptiles", "reptiles_inspyrenet.png"),
-    ];
     
-    for (key, filename) in &categorias {
-        let path = format!("assets/categorias/{}", filename);
-        if let Ok(bytes) = std::fs::read(&path) {
-            let tex = Texture2D::from_file_with_format(&bytes, Some(ImageFormat::Png));
-            tex.set_filter(FilterMode::Nearest);
-            iconos_categoria.insert(key.to_string(), tex);
-            println!("✅ Icono cargado: {}", key);
-        } else {
-            println!("⚠️ No se encontró: {}", path);
-        }
-    }
+    // ✅ Cargar cada ícono por separado (sin array de tuples)
+    let bytes_anfibios = include_bytes!("../assets/categorias/anfibios_inspyrenet.png");
+    let tex = Texture2D::from_file_with_format(&bytes_anfibios[..], Some(ImageFormat::Png));
+    tex.set_filter(FilterMode::Nearest);
+    iconos_categoria.insert("anfibios".to_string(), tex);
+    println!("✅ Icono cargado: anfibios");
     
-    // ✅ Cargar audio
+    let bytes_aves = include_bytes!("../assets/categorias/aves_inspyrenet.png");
+    let tex = Texture2D::from_file_with_format(&bytes_aves[..], Some(ImageFormat::Png));
+    tex.set_filter(FilterMode::Nearest);
+    iconos_categoria.insert("aves".to_string(), tex);
+    println!("✅ Icono cargado: aves");
+    
+    let bytes_fosiles = include_bytes!("../assets/categorias/fosiles_inspyrenet.png");
+    let tex = Texture2D::from_file_with_format(&bytes_fosiles[..], Some(ImageFormat::Png));
+    tex.set_filter(FilterMode::Nearest);
+    iconos_categoria.insert("fosiles".to_string(), tex);
+    println!("✅ Icono cargado: fosiles");
+    
+    let bytes_insectos = include_bytes!("../assets/categorias/insectos_inspyrenet.png");
+    let tex = Texture2D::from_file_with_format(&bytes_insectos[..], Some(ImageFormat::Png));
+    tex.set_filter(FilterMode::Nearest);
+    iconos_categoria.insert("insectos".to_string(), tex);
+    println!("✅ Icono cargado: insectos");
+    
+    let bytes_mamiferos = include_bytes!("../assets/categorias/mamiferos_inspyrenet.png");
+    let tex = Texture2D::from_file_with_format(&bytes_mamiferos[..], Some(ImageFormat::Png));
+    tex.set_filter(FilterMode::Nearest);
+    iconos_categoria.insert("mamiferos".to_string(), tex);
+    println!("✅ Icono cargado: mamiferos");
+    
+    let bytes_peces = include_bytes!("../assets/categorias/peces_inspyrenet.png");
+    let tex = Texture2D::from_file_with_format(&bytes_peces[..], Some(ImageFormat::Png));
+    tex.set_filter(FilterMode::Nearest);
+    iconos_categoria.insert("peces".to_string(), tex);
+    println!("✅ Icono cargado: peces");
+    
+    let bytes_primates = include_bytes!("../assets/categorias/primates_inspyrenet.png");
+    let tex = Texture2D::from_file_with_format(&bytes_primates[..], Some(ImageFormat::Png));
+    tex.set_filter(FilterMode::Nearest);
+    iconos_categoria.insert("primates".to_string(), tex);
+    println!("✅ Icono cargado: primates");
+    
+    let bytes_reptiles = include_bytes!("../assets/categorias/reptiles_inspyrenet.png");
+    let tex = Texture2D::from_file_with_format(&bytes_reptiles[..], Some(ImageFormat::Png));
+    tex.set_filter(FilterMode::Nearest);
+    iconos_categoria.insert("reptiles".to_string(), tex);
+    println!("✅ Icono cargado: reptiles");
+    
+    // ✅ AUDIO: include_bytes!
     let mut audio = AudioManager::new();
     
-    match std::fs::read("assets/audio/ambiente/amb_entrada.ogg") {
-        Ok(bytes) => audio.set_fallback(&bytes).await,
-        Err(e) => println!("⚠️ Error fallback audio: {:?}", e),
-    }
-    
-    match std::fs::read("assets/audio/efectos/fx_transicion.wav") {
-        Ok(bytes) => audio.agregar_efecto("transicion", &bytes).await,
-        Err(e) => println!("⚠️ Error efecto transicion: {:?}", e),
-    }
-    
-    match std::fs::read("assets/audio/efectos/fx_boton.wav") {
-        Ok(bytes) => audio.agregar_efecto("boton", &bytes).await,
-        Err(e) => println!("⚠️ Error efecto boton: {:?}", e),
-    }
+    audio.set_fallback(include_bytes!("../assets/audio/ambiente/amb_entrada.ogg")).await;
+    audio.agregar_efecto("transicion", include_bytes!("../assets/audio/efectos/fx_transicion.wav")).await;
+    audio.agregar_efecto("boton", include_bytes!("../assets/audio/efectos/fx_boton.wav")).await;
     
     for escena in Escena::TODAS {
-        match std::fs::read("assets/audio/ambiente/amb_entrada.ogg") {
-            Ok(bytes) => audio.agregar_ambiente(*escena, &bytes).await,
-            Err(e) => println!("⚠️ Error ambiente {:?}: {:?}", escena, e),
-        }
+        audio.agregar_ambiente(*escena, include_bytes!("../assets/audio/ambiente/amb_entrada.ogg")).await;
     }
     
-    // ✅ Cargar texturas de guías
-    let textura_eli = std::fs::read("assets/guias/guiaEli.png")
-        .ok()
-        .map(|bytes| {
-            let tex = Texture2D::from_file_with_format(&bytes, Some(ImageFormat::Png));
-            tex.set_filter(FilterMode::Nearest);
-            println!("✅ Guía Eli cargada");
-            tex
-        });
+    // ✅ TEXTURAS DE GUÍAS
+    let textura_eli = {
+        let bytes = include_bytes!("../assets/guias/guiaEli.png");
+        let tex = Texture2D::from_file_with_format(&bytes[..], Some(ImageFormat::Png));
+        tex.set_filter(FilterMode::Nearest);
+        println!("✅ Guía Eli cargada");
+        Some(tex)
+    };
     
-    let textura_ani = std::fs::read("assets/guias/guiaAni.png")
-        .ok()
-        .map(|bytes| {
-            let tex = Texture2D::from_file_with_format(&bytes, Some(ImageFormat::Png));
-            tex.set_filter(FilterMode::Nearest);
-            println!("✅ Guía Ani cargada");
-            tex
-        });
+    let textura_ani = {
+        let bytes = include_bytes!("../assets/guias/guiaAni.png");
+        let tex = Texture2D::from_file_with_format(&bytes[..], Some(ImageFormat::Png));
+        tex.set_filter(FilterMode::Nearest);
+        println!("✅ Guía Ani cargada");
+        Some(tex)
+    };
     
     let ui = UiRenderer::new(font, textura_eli, textura_ani, iconos_categoria);
-    
     let mut estado = Estado::new(&db);
+    
     estado.duracion_transicion = (audio.duracion_transicion() + 0.2)
         .max(config::TRANSITION_MIN);
     
     audio.iniciar_ambiente(estado.escena);
     
-    println!("🎮 Zoo Pixel iniciado correctamente");
+    println!("🎮 Zoo Pixel v0.5.1 iniciado correctamente");
     println!("📍 Escena inicial: {:?}", estado.escena);
     println!("📐 Resolución: {}x{}", screen_width(), screen_height());
     
@@ -137,7 +148,7 @@ async fn main() {
             estado.procesar_accion(accion, &db);
         }
         
-        // ✅ Input Android (táctil)
+        // Input Android (táctil)
         for accion in input::leer_tactil(&estado) {
             estado.procesar_accion(accion, &db);
         }
@@ -165,7 +176,7 @@ async fn main() {
         
         ui.render(&estado, &fondos);
         
-        // ✅ Overlay de controles en PC
+        // Overlay de controles en PC
         let mostrar_overlay_pc = estado.mostrar_overlay
             && !cfg!(target_os = "android")
             && !estado.en_pantalla_info()
@@ -177,7 +188,7 @@ async fn main() {
             render_pc_overlay(&estado, &ui.font);
         }
         
-        // ✅ Filtro CRT
+        // Filtro CRT
         let crt_activo = if matches!(estado.pantalla, Pantalla::Config) {
             estado.menu_config.crt
         } else {

@@ -1,6 +1,6 @@
 [package]
 name = "zoopixel"
-version = "0.4.0"
+version = "0.5.1"
 edition = "2021"
 authors = ["Tu Nombre <tu@email.com>"]
 description = "Zoológico virtual de fauna venezolana"
@@ -11,6 +11,7 @@ macroquad = { version = "0.4", features = ["audio"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rusqlite = { version = "0.31", features = ["bundled"] }
+quad-storage = "0.1"  # ✅ AGREGADO: Para guardado en Android 29+
 
 [profile.dev]
 opt-level = 1
@@ -41,7 +42,7 @@ build_targets = ["aarch64-linux-android", "armv7-linux-androideabi"]
 "android:keepScreenOn" = "true"
 "android:configChanges" = "orientation|screenSize"
 
-# ✅ Permisos de Android
+# ✅ Permisos de Android (solo hasta SDK 28)
 [[package.metadata.android.uses_permission]]
 name = "android.permission.WRITE_EXTERNAL_STORAGE"
 max_sdk_version = 28

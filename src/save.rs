@@ -29,10 +29,10 @@ impl Default for ConfigGuardada {
 
 const SAVE_FILE: &str = "zoo_save.json";
 
-// ✅ Función para obtener ruta de guardado apropiada por plataforma
+// ✅ FUNCIÓN CORREGIDA: Usa quad-storage en Android
 fn get_save_path() -> String {
     if cfg!(target_os = "android") {
-        // En Android, el directorio actual es el interno de la app
+        // En Android, usar nombre de archivo simple (quad-storage maneja la ruta)
         SAVE_FILE.to_string()
     } else {
         // En PC, guardar en directorio actual
@@ -43,16 +43,41 @@ fn get_save_path() -> String {
 impl SaveData {
     pub fn cargar() -> Self {
         let path = get_save_path();
-        match std::fs::read_to_string(&path) {
-            Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
-            Err(_) => Self::default(),
+        
+        #[cfg(target_os = "android")]
+        {
+            // ✅ Android: Usar quad-storage
+            match quad_storage::read(&path) {
+                Ok(data) => serde_json::from_slice(&data).unwrap_or_default(),
+                Err(_) => Self::default(),
+            }
+        }
+        
+        #[cfg(not(target_os = "android"))]
+        {
+            // ✅ PC: Usar std::fs
+            match std::fs::read_to_string(&path) {
+                Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
+                Err(_) => Self::default(),
+            }
         }
     }
     
     pub fn guardar(&self) {
         if let Ok(json) = serde_json::to_string_pretty(self) {
             let path = get_save_path();
-            let _ = std::fs::write(&path, json);
+            
+            #[cfg(target_os = "android")]
+            {
+                // ✅ Android: Usar quad-storage
+                let _ = quad_storage::write(&path, json.as_bytes());
+            }
+            
+            #[cfg(not(target_os = "android"))]
+            {
+                // ✅ PC: Usar std::fs
+                let _ = std::fs::write(&path, json);
+            }
         }
     }
     
