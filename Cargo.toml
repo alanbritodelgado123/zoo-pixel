@@ -2,6 +2,9 @@
 name = "zoopixel"
 version = "0.4.0"
 edition = "2021"
+authors = ["Tu Nombre <tu@email.com>"]
+description = "Zoológico virtual de fauna venezolana"
+license = "MIT"
 
 [dependencies]
 macroquad = { version = "0.4", features = ["audio"] }
@@ -9,9 +12,21 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rusqlite = { version = "0.31", features = ["bundled"] }
 
+# ✅ OPCIONAL: Para guardado compatible con Android
+# quad-storage = "0.1"
+
+[profile.dev]
+opt-level = 1
+
 [profile.dev.package."*"]
 opt-level = 3
 
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+# ✅ Configuración para Android
 [package.metadata.android]
 package_name = "com.tuusuario.zoopixel"
 label = "Zoo Pixel"
@@ -20,10 +35,34 @@ fullscreen = true
 android_version = 29
 target_sdk_version = 29
 min_sdk_version = 26
-build_targets = ["aarch64-linux-android"]
-# res = "android_res"
-# icon = "@mipmap/ic_launcher"
+build_targets = ["aarch64-linux-android", "armv7-linux-androideabi"]
 
+# ✅ Orientación LANDSCAPE (como pediste)
 [package.metadata.android.activity_attributes]
 "android:exported" = "true"
-"android:screenOrientation" = "userLandscape"
+"android:screenOrientation" = "landscape"
+"android:keepScreenOn" = "true"
+"android:configChanges" = "orientation|screenSize"
+
+# ✅ Icono de la app (opcional)
+# [package.metadata.android.application_attributes]
+# "android:icon" = "@mipmap/ic_launcher"
+
+# ✅ Permisos de Android (si necesitas guardado en archivo)
+[[package.metadata.android.uses_permission]]
+name = "android.permission.WRITE_EXTERNAL_STORAGE"
+max_sdk_version = 28
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.READ_EXTERNAL_STORAGE"
+max_sdk_version = 28
+
+# ✅ Configuración para iOS (futuro)
+# [package.metadata.ios]
+# target = "aarch64-apple-ios"
+
+# ✅ Configuración para WebAssembly (futuro)
+# [profile.release-wasm]
+# inherits = "release"
+# opt-level = "z"
+# lto = true

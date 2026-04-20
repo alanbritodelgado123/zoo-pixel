@@ -358,6 +358,12 @@ impl UiRenderer {
         self.render_hint(&hint, bottom - 8.0);
     }
 
+    // ... (resto de funciones de ui.rs sin cambios)
+    // Incluye: render_inicio, render_intro, render_config, render_barra_vol,
+    // render_mapa_completo, render_libreta, render_juego, render_barra_superior,
+    // render_normal, render_seleccion, render_foto_grid, render_pesca, render_museo,
+    // render_excavacion, render_quiz, render_minimapa, render_texto_wrapped, word_wrap
+
     fn render_inicio(&self, estado: &Estado) {
         clear_background(COLOR_BG_DARK);
         let sw = screen_width();
