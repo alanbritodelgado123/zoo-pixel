@@ -1,3 +1,4 @@
+// src/ui.rs
 use std::cell::Cell;
 use std::collections::HashMap;
 use macroquad::prelude::*;
@@ -36,12 +37,12 @@ impl UiRenderer {
     pub fn render(&self, estado: &Estado, fondos: &Fondos, audio: &AudioManager) {
         self.es_movil.set(estado.plataforma.es_movil());
         match estado.pantalla {
-            Pantalla::Inicio => self.render_inicio(estado),
-            Pantalla::Intro => self.render_intro(estado, fondos),
-            Pantalla::Config => self.render_config(estado),
-            Pantalla::MapaCompleto => self.render_mapa_completo(estado),
+            Pantalla::Inicio          => self.render_inicio(estado),
+            Pantalla::Intro           => self.render_intro(estado, fondos),
+            Pantalla::Config          => self.render_config(estado),
+            Pantalla::MapaCompleto    => self.render_mapa_completo(estado),
             Pantalla::LibretaCompleta => self.render_libreta(estado),
-            Pantalla::Juego => self.render_juego(estado, fondos, audio),
+            Pantalla::Juego           => self.render_juego(estado, fondos, audio),
         }
     }
 
@@ -53,17 +54,167 @@ impl UiRenderer {
         }
     }
 
+    // ═════════════════════════════════════════════════════════════════
+    //  PANTALLA DE INFO UNIFICADA (animales, fósiles, peces, mensajes)
+    // ═════════════════════════════════════════════════════════════════
+    fn render_info_animal(
+        &self,
+        info: &AnimalInfo,
+        top: f32,
+        bottom: f32,
+        audio: &AudioManager,
+    ) {
+        let sw = screen_width();
+        draw_rectangle(0.0, top, sw, bottom - top, COLOR_BG_DARK);
+
+        let available_h = bottom - top;
+
+        // ── Área de imagen ──────────────────────────────────────────
+        let img_h = available_h * 0.22;
+        let img_w = sw * 0.5;
+        let img_x = (sw - img_w) / 2.0;
+        let img_y = top + available_h * 0.03;
+
+        draw_rectangle(img_x, img_y, img_w, img_h, COLOR_BG_ALT);
+        draw_rectangle_lines(img_x, img_y, img_w, img_h, 1.0, COLOR_BORDER);
+
+        // ✅ ÍCONO DE CATEGORÍA COMO PLACEHOLDER (debajo del nombre)
+        let mut icono_dibujado = false;
+        if !info.categoria.is_empty() {
+            let cat_key = info.categoria.to_lowercase();
+            if let Some(icono_tex) = self.iconos_categoria.get(&cat_key) {
+                let icon_scale = 0.7;
+                let scaled_w = img_w * icon_scale;
+                let scaled_h = img_h * icon_scale;
+                let icon_x = img_x + (img_w - scaled_w) / 2.0;
+                let icon_y = img_y + (img_h - scaled_h) / 2.0;
+                draw_texture_ex(
+                    icono_tex,
+                    icon_x,
+                    icon_y,
+                    WHITE,
+                    DrawTextureParams {
+                        dest_size: Some(vec2(scaled_w, scaled_h)),
+                        ..Default::default()
+                    },
+                );
+                icono_dibujado = true;
+            }
+        }
+
+        if !icono_dibujado {
+            let ph = "[ imagen ]";
+            let fs_ph = fs_pct(0.02);
+            let phw = measure_text(ph, Some(&self.font), fs_ph, 1.0).width;
+            draw_text_ex(
+                ph,
+                img_x + (img_w - phw) / 2.0,
+                img_y + img_h * 0.55,
+                TextParams {
+                    font: Some(&self.font),
+                    font_size: fs_ph,
+                    color: COLOR_DIM,
+                    ..Default::default()
+                },
+            );
+        }
+
+        // ── Nombre común ────────────────────────────────────────────
+        let name_y = img_y + img_h + available_h * 0.04;
+        let fs_name = fs_adaptativo(&info.nombre_comun, &self.font, fs_pct(0.04), sw * 0.85);
+        let ntw = measure_text(&info.nombre_comun, Some(&self.font), fs_name, 1.0).width;
+        let th_name = text_height(&self.font, fs_name);
+        draw_text_ex(
+            &info.nombre_comun,
+            (sw - ntw) / 2.0,
+            name_y + th_name,
+            TextParams {
+                font: Some(&self.font),
+                font_size: fs_name,
+                color: COLOR_ACCENT,
+                ..Default::default()
+            },
+        );
+
+        // ── Nombre científico ───────────────────────────────────────
+        let sci_y = name_y + th_name + 6.0;
+        let fs_sci = fs_adaptativo(
+            &info.nombre_cientifico,
+            &self.font,
+            fs_pct(0.025),
+            sw * 0.8,
+        );
+        let stw = measure_text(&info.nombre_cientifico, Some(&self.font), fs_sci, 1.0).width;
+        let th_sci = text_height(&self.font, fs_sci);
+        draw_text_ex(
+            &info.nombre_cientifico,
+            (sw - stw) / 2.0,
+            sci_y + th_sci,
+            TextParams {
+                font: Some(&self.font),
+                font_size: fs_sci,
+                color: COLOR_TEXT_DIM,
+                ..Default::default()
+            },
+        );
+
+        // ── Separador ───────────────────────────────────────────────
+        let sep_y = sci_y + th_sci + 12.0;
+        draw_line(sw * 0.1, sep_y, sw * 0.9, sep_y, 1.0, COLOR_BORDER);
+
+        // ── Descripción (con scroll) ────────────────────────────────
+        let fs_desc = fs_pct(0.026);
+        let desc_text: String = info.descripcion.chars().take(info.texto_pos).collect();
+        self.render_texto_wrapped(
+            &desc_text,
+            sw * 0.08,
+            sep_y + 8.0,
+            sw * 0.84,
+            bottom - 30.0,
+            fs_desc,
+            COLOR_GREEN,
+        );
+
+        // ✅ REPRODUCIR GRITO DE CATEGORÍA (solo una vez)
+        if info.terminado && !self.grito_reproducido.get() && !info.categoria.is_empty() {
+            audio.reproducir_grito_categoria(&info.categoria);
+            self.grito_reproducido.set(true);
+        }
+
+        // ── Hint (adaptativo según contexto) ────────────────────────
+        let hint = if !info.hint_z.is_empty() {
+            if info.terminado {
+                format!("{}  X: Volver", info.hint_z)
+            } else {
+                "Z: Completar  X: Volver".to_string()
+            }
+        } else {
+            if info.terminado {
+                "X: Volver".to_string()
+            } else {
+                "Z: Completar  X: Volver".to_string()
+            }
+        };
+        self.render_hint(&hint, bottom - 8.0);
+    }
+
+    // ═════════════════════════════════════════════════════════════════
+    //  DIÁLOGO (con scroll mejorado)
+    // ═════════════════════════════════════════════════════════════════
     fn render_dialogo(&self, estado: &Estado) {
         let sw = screen_width();
         let sh = screen_height();
         let sb = safe_bottom();
-        let box_h = sh * 0.25;  // ✅ Aumentado para mejor scroll
+        let box_h = sh * 0.25;
         let box_y = sb - box_h - 8.0;
         let box_x = 8.0;
         let box_w = sw - 16.0;
+
         draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.5));
         draw_rectangle(box_x, box_y, box_w, box_h, COLOR_DIALOG_BG);
         draw_rectangle_lines(box_x, box_y, box_w, box_h, 2.0, COLOR_BORDER);
+
+        // ── Guía (arriba del diálogo) ───────────────────────────────
         if let Some(tex) = self.get_textura_guia(estado.dialogo.personaje_actual()) {
             let max_w = sw * 0.35;
             let max_h = sh * 0.25;
@@ -87,8 +238,11 @@ impl UiRenderer {
                 },
             );
         }
+
         let padding = 10.0;
         let inner_w = box_w - padding * 2.0;
+
+        // ── Nombre del personaje ────────────────────────────────────
         let personaje = estado.dialogo.personaje_actual();
         let fs_p = fs_adaptativo(personaje, &self.font, fs_pct(0.028), inner_w);
         let th_p = text_height(&self.font, fs_p);
@@ -103,6 +257,8 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
+
+        // ── Texto del diálogo (con scroll automático) ───────────────
         let texto = estado.dialogo.texto_visible();
         let fs_d = fs_pct(0.024);
         let text_top = box_y + padding + th_p + 6.0;
@@ -110,11 +266,14 @@ impl UiRenderer {
         let lines = self.word_wrap(&texto, fs_d, inner_w);
         let line_h = text_height(&self.font, fs_d) * 1.2;
         let max_visible = ((text_bottom - text_top) / line_h) as usize;
+
+        // ✅ Scroll automático: mostrar las últimas líneas
         let start = if lines.len() > max_visible {
             lines.len() - max_visible
         } else {
             0
         };
+
         let mut cy = text_top;
         for line in lines.iter().skip(start) {
             if cy + line_h > text_bottom {
@@ -133,6 +292,8 @@ impl UiRenderer {
                 },
             );
         }
+
+        // ── Indicador de "continuar" ────────────────────────────────
         if estado.dialogo.terminado_linea {
             draw_text_ex(
                 "▼",
@@ -148,6 +309,9 @@ impl UiRenderer {
         }
     }
 
+    // ═════════════════════════════════════════════════════════════════
+    //  HELPERS UI
+    // ═════════════════════════════════════════════════════════════════
     fn adaptar_hint(&self, texto: &str) -> String {
         if self.es_movil.get() {
             texto
@@ -219,137 +383,71 @@ impl UiRenderer {
         draw_triangle(points[0], points[1], points[2], WHITE);
     }
 
-    fn render_info_animal(
+    fn render_texto_wrapped(
         &self,
-        nombre: &str,
-        cientifico: &str,
-        descripcion: &str,
-        texto_pos: usize,
-        terminado: bool,
-        top: f32,
-        bottom: f32,
-        hint_z: &str,
-        categoria: &str,
-        audio: &AudioManager,
+        texto: &str,
+        x: f32,
+        y: f32,
+        max_w: f32,
+        max_y: f32,
+        fs: u16,
+        color: Color,
     ) {
-        let sw = screen_width();
-        draw_rectangle(0.0, top, sw, bottom - top, COLOR_BG_DARK);
-        let available_h = bottom - top;
-        let img_h = available_h * 0.22;
-        let img_w = sw * 0.5;
-        let img_x = (sw - img_w) / 2.0;
-        let img_y = top + available_h * 0.03;
-        draw_rectangle(img_x, img_y, img_w, img_h, COLOR_BG_ALT);
-        draw_rectangle_lines(img_x, img_y, img_w, img_h, 1.0, COLOR_BORDER);
-
-        // ✅ ÍCONO DE CATEGORÍA COMO PLACEHOLDER
-        let mut icono_dibujado = false;
-        let categoria_lower = categoria.to_lowercase();
-        if let Some(icono_tex) = self.iconos_categoria.get(&categoria_lower) {
-            let icon_scale_factor = 0.8;
-            let scaled_w = img_w * icon_scale_factor;
-            let scaled_h = img_h * icon_scale_factor;
-            let icon_x = img_x + (img_w - scaled_w) / 2.0;
-            let icon_y = img_y + (img_h - scaled_h) / 2.0;
-            draw_texture_ex(
-                icono_tex,
-                icon_x,
-                icon_y,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(vec2(scaled_w, scaled_h)),
-                    ..Default::default()
-                },
-            );
-            icono_dibujado = true;
-        }
-
-        if !icono_dibujado {
-            let ph = "[ imagen ]";
-            let fs_ph = fs_pct(0.02);
-            let phw = measure_text(ph, Some(&self.font), fs_ph, 1.0).width;
+        let line_h = text_height(&self.font, fs) * 1.2;
+        let mut cy = y;
+        for line in self.word_wrap(texto, fs, max_w) {
+            cy += line_h;
+            if cy > max_y {
+                break;
+            }
             draw_text_ex(
-                ph,
-                img_x + (img_w - phw) / 2.0,
-                img_y + img_h * 0.55,
+                &line,
+                x,
+                cy,
                 TextParams {
                     font: Some(&self.font),
-                    font_size: fs_ph,
-                    color: COLOR_DIM,
+                    font_size: fs,
+                    color,
                     ..Default::default()
                 },
             );
         }
-
-        let name_y = img_y + img_h + available_h * 0.04;
-        let fs_name = fs_adaptativo(nombre, &self.font, fs_pct(0.04), sw * 0.85);
-        let ntw = measure_text(nombre, Some(&self.font), fs_name, 1.0).width;
-        let th_name = text_height(&self.font, fs_name);
-        draw_text_ex(
-            nombre,
-            (sw - ntw) / 2.0,
-            name_y + th_name,
-            TextParams {
-                font: Some(&self.font),
-                font_size: fs_name,
-                color: COLOR_ACCENT,
-                ..Default::default()
-            },
-        );
-
-        let sci_y = name_y + th_name + 6.0;
-        let fs_sci = fs_adaptativo(cientifico, &self.font, fs_pct(0.025), sw * 0.8);
-        let stw = measure_text(cientifico, Some(&self.font), fs_sci, 1.0).width;
-        let th_sci = text_height(&self.font, fs_sci);
-        draw_text_ex(
-            cientifico,
-            (sw - stw) / 2.0,
-            sci_y + th_sci,
-            TextParams {
-                font: Some(&self.font),
-                font_size: fs_sci,
-                color: COLOR_TEXT_DIM,
-                ..Default::default()
-            },
-        );
-
-        let sep_y = sci_y + th_sci + 12.0;
-        draw_line(sw * 0.1, sep_y, sw * 0.9, sep_y, 1.0, COLOR_BORDER);
-
-        let fs_desc = fs_pct(0.026);
-        let desc_text: String = descripcion.chars().take(texto_pos).collect();
-        self.render_texto_wrapped(
-            &desc_text,
-            sw * 0.08,
-            sep_y + 8.0,
-            sw * 0.84,
-            bottom - 30.0,
-            fs_desc,
-            COLOR_GREEN,
-        );
-
-        // ✅ REPRODUCIR GRITO DE CATEGORÍA (solo una vez)
-        if terminado && !self.grito_reproducido.get() && !categoria.is_empty() {
-            audio.reproducir_grito_categoria(categoria);
-            self.grito_reproducido.set(true);
-        }
-
-        let hint = if terminado {
-            format!("{}  X: Volver", hint_z)
-        } else {
-            "Z: Completar  X: Volver".to_string()
-        };
-        self.render_hint(&hint, bottom - 8.0);
     }
 
+    fn word_wrap(&self, texto: &str, fs: u16, max_w: f32) -> Vec<String> {
+        let mut lines = Vec::new();
+        let mut current_line = String::new();
+        for word in texto.split_whitespace() {
+            let test = if current_line.is_empty() {
+                word.to_string()
+            } else {
+                format!("{} {}", current_line, word)
+            };
+            let w = measure_text(&test, Some(&self.font), fs, 1.0).width;
+            if w > max_w && !current_line.is_empty() {
+                lines.push(current_line);
+                current_line = word.to_string();
+            } else {
+                current_line = test;
+            }
+        }
+        if !current_line.is_empty() {
+            lines.push(current_line);
+        }
+        lines
+    }
+
+    // ═════════════════════════════════════════════════════════════════
+    //  RENDER INICIO
+    // ═════════════════════════════════════════════════════════════════
     fn render_inicio(&self, estado: &Estado) {
         clear_background(COLOR_BG_DARK);
         let sw = screen_width();
         let sh = screen_height();
+
         let titulo = "Zoo Pixel";
         let fs_t = fs_adaptativo(titulo, &self.font, fs_pct(0.08), sw * 0.85);
         let tw = measure_text(titulo, Some(&self.font), fs_t, 1.0).width;
-        let th_t = text_height(&self.font, fs_t);
         draw_text_ex(
             titulo,
             (sw - tw) / 2.0,
@@ -361,9 +459,11 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
+
         let sub = "Fauna venezolana";
         let fs_sub = fs_adaptativo(sub, &self.font, fs_pct(0.03), sw * 0.8);
         let sub_w = measure_text(sub, Some(&self.font), fs_sub, 1.0).width;
+        let th_t = text_height(&self.font, fs_t);
         draw_text_ex(
             sub,
             (sw - sub_w) / 2.0,
@@ -375,6 +475,7 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
+
         let opciones = ["Explorar", "Modo Dia", "Modo Noche", "Configuracion"];
         let fs_m = fs_adaptativo("Configuracion", &self.font, fs_pct(0.035), sw * 0.65);
         let th_m = text_height(&self.font, fs_m);
@@ -382,6 +483,7 @@ impl UiRenderer {
         let y_base = sh * 0.42;
         let cursor_w = measure_text(">", Some(&self.font), fs_m, 1.0).width;
         let cursor_gap = 8.0;
+
         for (i, opt) in opciones.iter().enumerate() {
             let selected = i == estado.inicio_seleccion;
             let color = if selected { COLOR_ACCENT } else { COLOR_TEXT };
@@ -415,6 +517,9 @@ impl UiRenderer {
         }
     }
 
+    // ═════════════════════════════════════════════════════════════════
+    //  RENDER INTRO
+    // ═════════════════════════════════════════════════════════════════
     fn render_intro(&self, estado: &Estado, fondos: &Fondos) {
         let sw = screen_width();
         let sh = screen_height();
@@ -427,11 +532,15 @@ impl UiRenderer {
         }
     }
 
+    // ═════════════════════════════════════════════════════════════════
+    //  RENDER CONFIG
+    // ═════════════════════════════════════════════════════════════════
     fn render_config(&self, estado: &Estado) {
         clear_background(COLOR_BG_DARK);
         let sw = screen_width();
         let sh = screen_height();
         let mc = &estado.menu_config;
+
         let titulo = "Configuracion";
         let fs_t = fs_adaptativo(titulo, &self.font, fs_pct(0.05), sw * 0.9);
         let tw = measure_text(titulo, Some(&self.font), fs_t, 1.0).width;
@@ -447,18 +556,21 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
+
         let fs_c = fs_adaptativo("Filtro CRT: Off", &self.font, fs_pct(0.032), sw * 0.7);
         let th_c = text_height(&self.font, fs_c);
         let fs_v = fs_pct(0.025);
         let bar_h_px = sh * 0.018;
         let cursor_w = measure_text(">", Some(&self.font), fs_c, 1.0).width;
         let cursor_gap = 8.0;
+
         let labels: [&str; 4] = [
             "Volumen Musica",
             "Volumen Efectos",
             if mc.crt { "Filtro CRT: On" } else { "Filtro CRT: Off" },
             "Volver",
         ];
+
         let mut y = sh * 0.25;
         for (i, label) in labels.iter().enumerate() {
             let selected = i == mc.seleccion;
@@ -529,11 +641,15 @@ impl UiRenderer {
         );
     }
 
+    // ═════════════════════════════════════════════════════════════════
+    //  RENDER MAPA COMPLETO
+    // ═════════════════════════════════════════════════════════════════
     fn render_mapa_completo(&self, estado: &Estado) {
         clear_background(COLOR_BG_DARK);
         let sw = screen_width();
         let sh = screen_height();
         let st = safe_top();
+
         let titulo = "Mapa";
         let fs_t = fs_adaptativo(titulo, &self.font, fs_pct(0.04), sw * 0.8);
         let th_t = text_height(&self.font, fs_t);
@@ -550,6 +666,7 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
+
         let mapa_top = title_y + 12.0;
         let mapa_bottom = sh - 55.0;
         let mapa_h = mapa_bottom - mapa_top;
@@ -557,6 +674,8 @@ impl UiRenderer {
         let mapa_w = cell * MAPA_COLS as f32;
         let ox = (sw - mapa_w) / 2.0;
         let oy = mapa_top;
+
+        // Dibujar conexiones
         for escena in Escena::TODAS {
             let (c, r) = escena.pos_mapa();
             let r_invertido = (MAPA_ROWS - 1) - r;
@@ -577,6 +696,8 @@ impl UiRenderer {
                 draw_line(cx, cy, cx2, cy2, 2.0, color);
             }
         }
+
+        // Dibujar nodos
         let fs_n = (cell * 0.22).max(8.0) as u16;
         for escena in Escena::TODAS {
             let (c, r) = escena.pos_mapa();
@@ -611,6 +732,7 @@ impl UiRenderer {
                 },
             );
         }
+
         let cursor_name = estado.mapa_cursor.nombre();
         let fs_info = fs_adaptativo(cursor_name, &self.font, fs_pct(0.03), sw * 0.9);
         let inf_tw = measure_text(cursor_name, Some(&self.font), fs_info, 1.0).width;
@@ -625,6 +747,7 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
+
         let puede_ir = estado.mapa_cursor != estado.escena
             && estado.visitadas.contains(&estado.mapa_cursor);
         let hint = if puede_ir {
@@ -635,15 +758,22 @@ impl UiRenderer {
         self.render_hint(hint, sh - 8.0);
     }
 
+    // ═════════════════════════════════════════════════════════════════
+    //  RENDER LIBRETA
+    // ═════════════════════════════════════════════════════════════════
     fn render_libreta(&self, estado: &Estado) {
         clear_background(COLOR_BG_DARK);
         let sw = screen_width();
         let sh = screen_height();
         let st = safe_top();
-        if let Some(ref _info) = estado.libreta_info {
-            // Resetear grito al entrar
+
+        // Si hay info abierta, mostrarla
+        if let Some(ref info) = estado.libreta_info {
             self.grito_reproducido.set(false);
+            self.render_info_animal(info, st, sh, &crate::audio::AudioManager::new());
+            return;
         }
+
         let titulo = "Libreta de Campo";
         let fs_t = fs_adaptativo(titulo, &self.font, fs_pct(0.04), sw * 0.9);
         let th_t = text_height(&self.font, fs_t);
@@ -660,6 +790,7 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
+
         let total = estado.libreta.entradas.len();
         if total == 0 {
             let msg = "Aun no has descubierto animales.";
@@ -687,6 +818,7 @@ impl UiRenderer {
             let text_x = 15.0 + cursor_w;
             let inicio = estado.libreta.pagina * por_pagina;
             let fin = (inicio + por_pagina).min(total);
+
             for (i, idx) in (inicio..fin).enumerate() {
                 let entry = &estado.libreta.entradas[idx];
                 let y = y_start + i as f32 * item_h;
@@ -726,6 +858,7 @@ impl UiRenderer {
                     Color::new(0.2, 0.2, 0.2, 1.0),
                 );
             }
+
             let total_paginas = (total + por_pagina - 1) / por_pagina;
             let pag = format!("Pagina {} / {}", estado.libreta.pagina + 1, total_paginas);
             let fs_p = fs_pct(0.022);
@@ -742,9 +875,13 @@ impl UiRenderer {
                 },
             );
         }
+
         self.render_hint("Z: Ver  Flechas: Navegar  X: Cerrar", sh - 10.0);
     }
 
+    // ═════════════════════════════════════════════════════════════════
+    //  RENDER JUEGO
+    // ═════════════════════════════════════════════════════════════════
     fn render_juego(&self, estado: &Estado, fondos: &Fondos, audio: &AudioManager) {
         let sw = screen_width();
         let sh = screen_height();
@@ -752,27 +889,22 @@ impl UiRenderer {
         let st = safe_top();
         let sb = safe_bottom();
         let content_top = st + bar_h;
+
+        // ── Info overlay tiene prioridad máxima ─────────────────────
         if let Some(ref info) = estado.info_overlay {
             clear_background(COLOR_BG_DARK);
             self.render_barra_superior(estado, sw, bar_h, st);
-            self.render_info_animal(
-                &info.nombre_comun,
-                &info.nombre_cientifico,
-                &info.descripcion,
-                info.texto_pos,
-                info.terminado,
-                content_top,
-                sh,
-                "Z: Continuar",
-                &info.categoria,
-                audio,
-            );
+            self.grito_reproducido.set(false);
+            self.render_info_animal(info, content_top, sh, audio);
             return;
         }
+
+        // ── Fondo con tinte de día/noche ────────────────────────────
         let tinte = estado.ciclo.tinte();
         fondos.draw(&estado.escena, tinte, content_top, sh);
         self.render_barra_superior(estado, sw, bar_h, st);
-        let en_info = estado.en_pantalla_info();
+
+        // ── Contenido según modo ─────────────────────────────────────
         match &estado.modo {
             ModoVista::Normal => self.render_normal(estado, content_top, sb),
             ModoVista::Seleccion { animales, indice } => {
@@ -785,18 +917,17 @@ impl UiRenderer {
                 ..
             } => {
                 self.grito_reproducido.set(false);
-                self.render_info_animal(
-                    &animal.nombre_comun,
-                    &animal.nombre_cientifico,
-                    &animal.descripcion,
-                    *texto_pos,
-                    *terminado,
-                    content_top,
-                    sh,
-                    "Z: Sonido",
-                    &animal.categoria,
-                    audio,
-                );
+                let info = AnimalInfo {
+                    nombre_comun: animal.nombre_comun.clone(),
+                    nombre_cientifico: animal.nombre_cientifico.clone(),
+                    descripcion: animal.descripcion.clone(),
+                    texto_pos: *texto_pos,
+                    timer: 0.0,
+                    terminado: *terminado,
+                    categoria: animal.categoria.clone(),
+                    hint_z: "Z: Sonido".to_string(),
+                };
+                self.render_info_animal(&info, content_top, sh, audio);
             }
             ModoVista::Foto {
                 animales,
@@ -811,41 +942,57 @@ impl UiRenderer {
                 if *foto_tomada {
                     let a = &animales[*indice_actual];
                     self.grito_reproducido.set(false);
-                    self.render_info_animal(
-                        &a.nombre_comun,
-                        &a.nombre_cientifico,
-                        &a.descripcion,
-                        *texto_pos,
-                        *terminado,
+                    let info = AnimalInfo {
+                        nombre_comun: a.nombre_comun.clone(),
+                        nombre_cientifico: a.nombre_cientifico.clone(),
+                        descripcion: a.descripcion.clone(),
+                        texto_pos: *texto_pos,
+                        timer: 0.0,
+                        terminado: *terminado,
+                        categoria: a.categoria.clone(),
+                        hint_z: "Z: Siguiente".to_string(),
+                    };
+                    self.render_info_animal(&info, content_top, sh, audio);
+                } else {
+                    self.render_foto_grid(
+                        animales,
+                        *indice_actual,
+                        *celda,
+                        ya_vistos,
                         content_top,
                         sh,
-                        "Z: Siguiente",
-                        &a.categoria,
-                        audio,
                     );
-                } else {
-                    self.render_foto_grid(animales, *indice_actual, *celda, ya_vistos, content_top, sh);
                 }
             }
         }
+
+        // ── Minijuegos (solo UI de control) ──────────────────────────
         if estado.pesca.activo {
             self.render_pesca(estado, content_top, sh);
         }
         if estado.museo.activo {
             self.render_museo(estado, content_top, sh);
         }
+
+        // ── Diálogo con máxima prioridad ─────────────────────────────
         if estado.dialogo.activo {
             self.render_dialogo(estado);
         }
+
+        // ── Overlay de noche ─────────────────────────────────────────
         let alpha = estado.ciclo.overlay_alpha();
         if alpha > 0.0 {
             draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.15, alpha));
         }
+
+        // ── Transición ───────────────────────────────────────────────
         if estado.en_transicion() {
             let a = estado.alpha_transicion();
             draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, a));
         }
-        if !en_info {
+
+        // ── Minimapa ─────────────────────────────────────────────────
+        if !estado.en_pantalla_info() {
             self.render_minimapa(estado, sb);
         }
     }
@@ -889,6 +1036,8 @@ impl UiRenderer {
         let bounce_frame = ((get_time() * 2.5) as i32 % 2) as f32;
         let bounce_px = (3.0 * scale()).min(5.0);
         let margin = arrow_size * 2.5;
+
+        // Flechas de navegación
         if conns[0].is_some() {
             let cy = content_top + margin - bounce_px * bounce_frame;
             self.draw_arrow_triangle(sw / 2.0, cy, 0, arrow_size);
@@ -905,19 +1054,22 @@ impl UiRenderer {
             let cx = sw - margin + bounce_px * bounce_frame;
             self.draw_arrow_triangle(cx, mid_y, 3, arrow_size);
         }
-        if !estado.escena.es_entrada() {
-            // ✅ HINT ESPECÍFICO POR ZONA
-            let hint = if estado.escena.es_pesca() {
-                "Z: Pescar"  // ✅ P5 ahora muestra "Z: Pescar"
-            } else if estado.escena.es_museo() {
-                "Z: Explorar Museo"
-            } else if estado.escena.es_foto() {
-                "Z: Modo Foto"
-            } else {
-                "Z: Explorar"
-            };
-            self.render_hint(hint, content_bottom - 5.0);
+
+        // ✅ HINT ESPECÍFICO POR ZONA (ahora P5 muestra correctamente)
+        if estado.escena.sin_exploracion() && !estado.escena.es_pesca() && !estado.escena.es_museo() {
+            return; // No mostrar hint en E, P1-P4 (excepto P5)
         }
+
+        let hint = if estado.escena.es_pesca() {
+            "Z: Pescar"
+        } else if estado.escena.es_museo() {
+            "Z: Explorar Museo"
+        } else if estado.escena.es_foto() {
+            "Z: Modo Foto"
+        } else {
+            "Z: Explorar"
+        };
+        self.render_hint(hint, content_bottom - 5.0);
     }
 
     fn render_seleccion(
@@ -935,6 +1087,7 @@ impl UiRenderer {
         let y_start = content_top + 20.0;
         let cursor_w = measure_text("> ", Some(&self.font), fs_name, 1.0).width;
         let text_x = 15.0 + cursor_w;
+
         for (i, animal) in animales.iter().enumerate() {
             let selected = i == indice;
             let color = if selected { COLOR_ACCENT } else { COLOR_TEXT };
@@ -983,10 +1136,15 @@ impl UiRenderer {
         let grid_size = ((content_bottom - content_top) * 0.4).min(sw * 0.35);
         let gx = (sw - grid_size * 2.0) / 2.0;
         let gy = mid_y - grid_size;
+
         for c in 0..4_usize {
             let cx = gx + (c % 2) as f32 * grid_size;
             let cy = gy + (c / 2) as f32 * grid_size;
-            let color = if c == celda { COLOR_GREEN } else { COLOR_BG_ALT };
+            let color = if c == celda {
+                COLOR_GREEN
+            } else {
+                COLOR_BG_ALT
+            };
             draw_rectangle(cx, cy, grid_size - 4.0, grid_size - 4.0, color);
             draw_rectangle_lines(cx, cy, grid_size - 4.0, grid_size - 4.0, 2.0, COLOR_BORDER);
             if c == celda {
@@ -1005,6 +1163,7 @@ impl UiRenderer {
                 );
             }
         }
+
         let count = format!("{}/{}", ya_vistos.len(), animales.len());
         let fs_c = fs_pct(0.022);
         draw_text_ex(
@@ -1021,14 +1180,19 @@ impl UiRenderer {
         self.render_hint("Z: Fotografiar  X: Salir", content_bottom - 8.0);
     }
 
+    // ═════════════════════════════════════════════════════════════════
+    //  RENDER PESCA
+    // ═════════════════════════════════════════════════════════════════
     fn render_pesca(&self, estado: &Estado, content_top: f32, content_bottom: f32) {
         use crate::minijuego::FasePesca;
         let sw = screen_width();
         let pesca = &estado.pesca;
         draw_rectangle(0.0, content_top, sw, content_bottom - content_top, COLOR_BG_DARK);
+
         let fs_p = fs_pct(0.035);
         let mid_y = (content_top + content_bottom) / 2.0;
         let boton = if self.es_movil.get() { "A" } else { "Z" };
+
         match pesca.fase {
             FasePesca::Esperando => {
                 let t = "Esperando picada...";
@@ -1045,6 +1209,7 @@ impl UiRenderer {
                         ..Default::default()
                     },
                 );
+
                 let wave = (pesca.timer * 2.0).sin() * 0.5 + 0.5;
                 let dots = match (wave * 3.0) as usize {
                     0 => "~",
@@ -1065,6 +1230,7 @@ impl UiRenderer {
                 );
                 self.render_hint("X: Salir", content_bottom - 8.0);
             }
+
             FasePesca::Picando => {
                 let t = format!("!! PICA !! {}!", boton);
                 let fs = fs_adaptativo(&t, &self.font, fs_p, sw * 0.9);
@@ -1082,19 +1248,30 @@ impl UiRenderer {
                         ..Default::default()
                     },
                 );
+
                 let bar_w = sw * 0.6;
                 let bar_h = 8.0;
                 let bar_x = (sw - bar_w) / 2.0;
                 let bar_y = mid_y + 25.0;
-                let progress = 1.0 - (pesca.timer / pesca.tiempo_picada).min(1.0);
+                let progress = pesca.progreso_picada();
                 draw_rectangle(bar_x, bar_y, bar_w, bar_h, COLOR_BAR_BG);
                 draw_rectangle(bar_x, bar_y, bar_w * progress, bar_h, COLOR_DANGER);
                 self.render_hint("Z: Tirar!  X: Salir", content_bottom - 8.0);
             }
+
             FasePesca::Resultado => {
-                let t = "Se escapo...";
+                let t = if pesca.ultimo_exito {
+                    "¡Capturado!"
+                } else {
+                    "Se escapo..."
+                };
                 let fs = fs_adaptativo(t, &self.font, fs_p, sw * 0.9);
                 let tw_t = measure_text(t, Some(&self.font), fs, 1.0).width;
+                let color = if pesca.ultimo_exito {
+                    COLOR_SUCCESS
+                } else {
+                    COLOR_DANGER
+                };
                 draw_text_ex(
                     t,
                     (sw - tw_t) / 2.0,
@@ -1102,21 +1279,30 @@ impl UiRenderer {
                     TextParams {
                         font: Some(&self.font),
                         font_size: fs,
-                        color: COLOR_DANGER,
+                        color,
                         ..Default::default()
                     },
                 );
-                self.render_hint("Z: Siguiente  X: Salir", content_bottom - 8.0);
+
+                let hint = if pesca.intentos < pesca.max_intentos {
+                    "Z: Siguiente  X: Salir"
+                } else {
+                    "X: Salir"
+                };
+                self.render_hint(hint, content_bottom - 8.0);
             }
-            FasePesca::InfoPez => {}
         }
     }
 
+    // ═════════════════════════════════════════════════════════════════
+    //  RENDER MUSEO
+    // ═════════════════════════════════════════════════════════════════
     fn render_museo(&self, estado: &Estado, content_top: f32, content_bottom: f32) {
         use crate::minijuego::{FaseMuseo, CeldaExcavacion};
         let sw = screen_width();
         let museo = &estado.museo;
         draw_rectangle(0.0, content_top, sw, content_bottom - content_top, COLOR_BG_DARK);
+
         match museo.fase {
             FaseMuseo::Entrada => {
                 let mid_y = (content_top + content_bottom) / 2.0;
@@ -1136,6 +1322,7 @@ impl UiRenderer {
                 );
                 self.render_hint("Z: Entrar  X: Salir", content_bottom - 8.0);
             }
+
             FaseMuseo::Explorando => {
                 let fs_item = fs_adaptativo("Quiz Paleontologico", &self.font, fs_pct(0.03), sw * 0.70);
                 let th = text_height(&self.font, fs_item);
@@ -1143,6 +1330,8 @@ impl UiRenderer {
                 let y_start = content_top + 20.0;
                 let cursor_w = measure_text("> ", Some(&self.font), fs_item, 1.0).width;
                 let text_x = 20.0 + cursor_w;
+
+                // Exhibiciones
                 for (i, dino) in museo.exhibiciones.iter().enumerate() {
                     let sel = i == museo.indice;
                     let color = if sel { COLOR_ACCENT } else { COLOR_TEXT };
@@ -1172,6 +1361,8 @@ impl UiRenderer {
                         },
                     );
                 }
+
+                // Excavar
                 let exc_idx = museo.exhibiciones.len();
                 let sel_e = museo.indice == exc_idx;
                 let y_exc = y_start + exc_idx as f32 * item_h + th;
@@ -1200,6 +1391,8 @@ impl UiRenderer {
                         ..Default::default()
                     },
                 );
+
+                // Quiz
                 let quiz_idx = exc_idx + 1;
                 let sel_q = museo.indice == quiz_idx;
                 let y_quiz = y_start + quiz_idx as f32 * item_h + th;
@@ -1228,56 +1421,24 @@ impl UiRenderer {
                         ..Default::default()
                     },
                 );
+
                 self.render_hint("Z: Seleccionar  X: Salir", content_bottom - 8.0);
             }
+
             FaseMuseo::Excavando => {
                 self.render_excavacion(museo, content_top, content_bottom);
             }
-            FaseMuseo::FosilRevelado => {
-                let mid_y = (content_top + content_bottom) / 2.0;
-                if museo.fosil_encontrado {
-                    let t = "¡Fósil completado!";
-                    let fs = fs_adaptativo(t, &self.font, fs_pct(0.04), sw * 0.9);
-                    let tw = measure_text(t, Some(&self.font), fs, 1.0).width;
-                    draw_text_ex(
-                        t,
-                        (sw - tw) / 2.0,
-                        mid_y - 20.0,
-                        TextParams {
-                            font: Some(&self.font),
-                            font_size: fs,
-                            color: COLOR_SUCCESS,
-                            ..Default::default()
-                        },
-                    );
-                } else {
-                    let t = "Excavación incompleta";
-                    let fs = fs_adaptativo(t, &self.font, fs_pct(0.04), sw * 0.9);
-                    let tw = measure_text(t, Some(&self.font), fs, 1.0).width;
-                    draw_text_ex(
-                        t,
-                        (sw - tw) / 2.0,
-                        mid_y - 20.0,
-                        TextParams {
-                            font: Some(&self.font),
-                            font_size: fs,
-                            color: COLOR_DANGER,
-                            ..Default::default()
-                        },
-                    );
-                }
-                self.render_hint("Z: Continuar", content_bottom - 8.0);
-            }
-            FaseMuseo::ViendoExhibicion => {}
+
             FaseMuseo::Quiz => {
                 self.render_quiz(museo, content_top, content_bottom);
             }
+
             FaseMuseo::QuizResultado => {
                 let mid_y = (content_top + content_bottom) / 2.0;
                 let mensaje = if museo.quiz_puntaje >= 2 {
-                    "¡Ganaste! Excelente conocimiento."
+                    "¡Excelente! Aprobado."
                 } else {
-                    "Sigue practicando. ¡Puedes mejorar!"
+                    "Sigue practicando."
                 };
                 let color = if museo.quiz_puntaje >= 2 {
                     COLOR_SUCCESS
@@ -1297,6 +1458,7 @@ impl UiRenderer {
                         ..Default::default()
                     },
                 );
+
                 let puntaje = format!("Puntaje: {}/{}", museo.quiz_puntaje, museo.quiz_total);
                 let fs_p = fs_pct(0.025);
                 let pw = measure_text(&puntaje, Some(&self.font), fs_p, 1.0).width;
@@ -1316,9 +1478,18 @@ impl UiRenderer {
         }
     }
 
-    fn render_excavacion(&self, museo: &crate::minijuego::MinijuegoMuseo, content_top: f32, content_bottom: f32) {
+    // ═════════════════════════════════════════════════════════════════
+    //  ✅ RENDER EXCAVACION (CORREGIDO)
+    // ═════════════════════════════════════════════════════════════════
+    fn render_excavacion(
+        &self,
+        museo: &crate::minijuego::MinijuegoMuseo,
+        content_top: f32,
+        content_bottom: f32,
+    ) {
         use crate::minijuego::CeldaExcavacion;
         let sw = screen_width();
+
         let golpes = format!("Golpes: {}/{}", museo.golpes_restantes, museo.max_golpes);
         let fs_g = fs_pct(0.022);
         let gtw = measure_text(&golpes, Some(&self.font), fs_g, 1.0).width;
@@ -1333,6 +1504,7 @@ impl UiRenderer {
                 ..Default::default()
             },
         );
+
         let grid_top = content_top + 30.0;
         let grid_bottom = content_bottom - 30.0;
         let available_h = grid_bottom - grid_top;
@@ -1343,6 +1515,7 @@ impl UiRenderer {
         let grid_h = cell_size * museo.grilla_rows as f32;
         let ox = (sw - grid_w) / 2.0;
         let oy = grid_top + (available_h - grid_h) / 2.0;
+
         for row in 0..museo.grilla_rows {
             for col in 0..museo.grilla_cols {
                 let x = ox + col as f32 * cell_size;
@@ -1405,90 +1578,105 @@ impl UiRenderer {
         self.render_hint("Flechas: mover  Z: golpear  X: salir", content_bottom - 8.0);
     }
 
-    fn render_quiz(&self, museo: &crate::minijuego::MinijuegoMuseo, content_top: f32, content_bottom: f32) {
+    // ═════════════════════════════════════════════════════════════════
+    //  RENDER QUIZ
+    // ═════════════════════════════════════════════════════════════════
+    fn render_quiz(
+        &self,
+        museo: &crate::minijuego::MinijuegoMuseo,
+        content_top: f32,
+        content_bottom: f32,
+    ) {
         let sw = screen_width();
         let fs_q = fs_pct(0.028);
         let th = text_height(&self.font, fs_q);
-        self.render_texto_wrapped(
-            &museo.quiz_pregunta,
-            sw * 0.05,
-            content_top + 20.0,
-            sw * 0.9,
-            content_top + 100.0,
-            fs_q,
-            COLOR_TEXT,
-        );
-        let y_opts = content_top + 110.0;
-        let opt_h = th * 2.0;
-        let cursor_w = measure_text("> ", Some(&self.font), fs_q, 1.0).width;
-        let text_x = 30.0 + cursor_w;
-        for (i, opt) in museo.quiz_opciones.iter().enumerate() {
-            let sel = i == museo.quiz_seleccion;
-            let color = if museo.quiz_respondida {
-                if i == museo.quiz_correcta {
-                    COLOR_GREEN
-                } else if sel && !museo.quiz_correcta_resp {
-                    COLOR_DANGER
+
+        if let Some(ref q) = museo.quiz_activo {
+            self.render_texto_wrapped(
+                &q.pregunta,
+                sw * 0.05,
+                content_top + 20.0,
+                sw * 0.9,
+                content_top + 100.0,
+                fs_q,
+                COLOR_TEXT,
+            );
+
+            let y_opts = content_top + 110.0;
+            let opt_h = th * 2.0;
+            let cursor_w = measure_text("> ", Some(&self.font), fs_q, 1.0).width;
+            let text_x = 30.0 + cursor_w;
+
+            for (i, opt) in q.opciones.iter().enumerate() {
+                let sel = i == q.seleccion;
+                let color = if q.respondida {
+                    if i == q.correcta {
+                        COLOR_GREEN
+                    } else if sel && !q.fue_correcta {
+                        COLOR_DANGER
+                    } else {
+                        COLOR_TEXT_DIM
+                    }
+                } else if sel {
+                    COLOR_ACCENT
                 } else {
-                    COLOR_TEXT_DIM
+                    COLOR_TEXT
+                };
+                let y = y_opts + i as f32 * opt_h + th;
+                if sel && !q.respondida {
+                    draw_text_ex(
+                        ">",
+                        30.0,
+                        y,
+                        TextParams {
+                            font: Some(&self.font),
+                            font_size: fs_q,
+                            color: COLOR_ACCENT,
+                            ..Default::default()
+                        },
+                    );
                 }
-            } else if sel {
-                COLOR_ACCENT
-            } else {
-                COLOR_TEXT
-            };
-            let y = y_opts + i as f32 * opt_h + th;
-            if sel && !museo.quiz_respondida {
                 draw_text_ex(
-                    ">",
-                    30.0,
+                    opt,
+                    text_x,
                     y,
                     TextParams {
                         font: Some(&self.font),
                         font_size: fs_q,
-                        color: COLOR_ACCENT,
+                        color,
                         ..Default::default()
                     },
                 );
             }
-            draw_text_ex(
-                opt,
-                text_x,
-                y,
-                TextParams {
-                    font: Some(&self.font),
-                    font_size: fs_q,
-                    color,
-                    ..Default::default()
-                },
-            );
+
+            if q.respondida {
+                let msg = if q.fue_correcta {
+                    "Correcto!"
+                } else {
+                    "Incorrecto"
+                };
+                let color = if q.fue_correcta {
+                    COLOR_GREEN
+                } else {
+                    COLOR_DANGER
+                };
+                let fs_r = fs_pct(0.035);
+                let mtw = measure_text(msg, Some(&self.font), fs_r, 1.0).width;
+                draw_text_ex(
+                    msg,
+                    (sw - mtw) / 2.0,
+                    content_bottom - 40.0,
+                    TextParams {
+                        font: Some(&self.font),
+                        font_size: fs_r,
+                        color,
+                        ..Default::default()
+                    },
+                );
+            }
         }
-        if museo.quiz_respondida {
-            let msg = if museo.quiz_correcta_resp {
-                "Correcto!"
-            } else {
-                "Incorrecto"
-            };
-            let color = if museo.quiz_correcta_resp {
-                COLOR_GREEN
-            } else {
-                COLOR_DANGER
-            };
-            let fs_r = fs_pct(0.035);
-            let mtw = measure_text(msg, Some(&self.font), fs_r, 1.0).width;
-            draw_text_ex(
-                msg,
-                (sw - mtw) / 2.0,
-                content_bottom - 40.0,
-                TextParams {
-                    font: Some(&self.font),
-                    font_size: fs_r,
-                    color,
-                    ..Default::default()
-                },
-            );
-        }
-        let hint = if museo.quiz_respondida {
+
+        let hint = if museo.quiz_activo.as_ref().map(|q| q.respondida).unwrap_or(false) {
             "Z: Siguiente"
         } else {
             "Z: Responder  X: Volver"
@@ -1496,6 +1684,9 @@ impl UiRenderer {
         self.render_hint(hint, content_bottom - 8.0);
     }
 
+    // ═════════════════════════════════════════════════════════════════
+    //  RENDER MINIMAPA
+    // ═════════════════════════════════════════════════════════════════
     fn render_minimapa(&self, estado: &Estado, content_bottom: f32) {
         let cell = mini_size();
         let gap = mini_gap();
@@ -1509,6 +1700,8 @@ impl UiRenderer {
         let (centro_c, centro_r) = estado.escena.pos_mapa();
         let centro_c = centro_c as i32;
         let centro_r = centro_r as i32;
+
+        // Conexiones
         for escena in Escena::TODAS {
             let (c, r) = escena.pos_mapa();
             let dc = c as i32 - centro_c;
@@ -1539,6 +1732,8 @@ impl UiRenderer {
                 draw_line(x1, y1, x2, y2, 1.0, line_color);
             }
         }
+
+        // Nodos
         for escena in Escena::TODAS {
             let (c, r) = escena.pos_mapa();
             let dc = c as i32 - centro_c;
@@ -1568,58 +1763,85 @@ impl UiRenderer {
             draw_rectangle(x, y, cell, cell, color);
         }
     }
+}
 
-    fn render_texto_wrapped(
-        &self,
-        texto: &str,
-        x: f32,
-        y: f32,
-        max_w: f32,
-        max_y: f32,
-        fs: u16,
-        color: Color,
-    ) {
-        let line_h = text_height(&self.font, fs) * 1.2;
-        let mut cy = y;
-        for line in self.word_wrap(texto, fs, max_w) {
-            cy += line_h;
-            if cy > max_y {
-                break;
-            }
-            draw_text_ex(
-                &line,
-                x,
-                cy,
-                TextParams {
-                    font: Some(&self.font),
-                    font_size: fs,
-                    color,
-                    ..Default::default()
-                },
-            );
-        }
+// ═════════════════════════════════════════════════════════════════
+//  FUNCIONES LIBRES (fuera del impl)
+// ═════════════════════════════════════════════════════════════════
+
+pub fn render_pc_overlay(estado: &Estado, font: &Font) {
+    let s = scale();
+    let sw = screen_width();
+    let sh = screen_height();
+    let fs = fs_pct(0.028);
+    let margin = 8.0 * s;
+    let gap = 12.0 * s;
+    let shadow_offset = (1.5 * s).max(1.0);
+    let pad_x = 10.0 * s;
+    let pad_y = 5.0 * s;
+    let indicators: &[(&str, f32)] = &[
+        ("Z", estado.indicador_z_pressed),
+        ("X", estado.indicador_x_pressed),
+        ("M", 0.0),
+        ("L", 0.0),
+    ];
+    let total_w: f32 = indicators
+        .iter()
+        .map(|(k, _)| measure_text(&format!("[{}]", k), Some(font), fs, 1.0).width + gap)
+        .sum::<f32>()
+        - gap;
+    let th = text_height(font, fs);
+    let group_x = (sw - total_w) / 2.0;
+    let text_y = sh - margin;
+    draw_rectangle(
+        group_x - pad_x,
+        text_y - th - pad_y,
+        total_w + pad_x * 2.0,
+        th + pad_y * 2.0,
+        Color::new(0.15, 0.15, 0.15, 0.6),
+    );
+    let mut x = group_x;
+    for (key, pressed) in indicators {
+        let texto = format!("[{}]", key);
+        let tw = measure_text(&texto, Some(font), fs, 1.0).width;
+        let color = if *pressed > 0.0 {
+            COLOR_ACCENT
+        } else {
+            WHITE
+        };
+        draw_text_ex(
+            &texto,
+            x + shadow_offset,
+            text_y + shadow_offset,
+            TextParams {
+                font: Some(font),
+                font_size: fs,
+                color: Color::new(0.0, 0.0, 0.0, 0.7),
+                ..Default::default()
+            },
+        );
+        draw_text_ex(
+            &texto,
+            x,
+            text_y,
+            TextParams {
+                font: Some(font),
+                font_size: fs,
+                color,
+                ..Default::default()
+            },
+        );
+        x += tw + gap;
     }
+}
 
-    fn word_wrap(&self, texto: &str, fs: u16, max_w: f32) -> Vec<String> {
-        let mut lines = Vec::new();
-        let mut current_line = String::new();
-        for word in texto.split_whitespace() {
-            let test = if current_line.is_empty() {
-                word.to_string()
-            } else {
-                format!("{} {}", current_line, word)
-            };
-            let w = measure_text(&test, Some(&self.font), fs, 1.0).width;
-            if w > max_w && !current_line.is_empty() {
-                lines.push(current_line);
-                current_line = word.to_string();
-            } else {
-                current_line = test;
-            }
-        }
-        if !current_line.is_empty() {
-            lines.push(current_line);
-        }
-        lines
+pub fn render_crt() {
+    let sw = screen_width();
+    let sh = screen_height();
+    let gap = (sh / 200.0).max(2.0).min(4.0);
+    let mut y = 0.0;
+    while y < sh {
+        draw_rectangle(0.0, y, sw, 1.0, Color::new(0.0, 0.0, 0.0, 0.15));
+        y += gap;
     }
 }

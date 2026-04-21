@@ -32,13 +32,13 @@ impl Escena {
 
     pub fn nombre(&self) -> &'static str {
         match self {
-            Self::E => "Entrada Principal",
-            Self::P1 => "Pasillo 1",
-            Self::P2 => "Pasillo 2",
-            Self::P3 => "Pasillo 3",
-            Self::P4 => "Pasillo 4",
-            Self::P5 => "Pasillo 5 - Acuario",
-            Self::Z1_1 => "Llanos Centrales - Chigüire",
+            Self::E    => "Entrada Principal",
+            Self::P1   => "Pasillo 1",
+            Self::P2   => "Pasillo 2",
+            Self::P3   => "Pasillo 3",
+            Self::P4   => "Pasillo 4",
+            Self::P5   => "Pasillo 5 - Acuario",
+            Self::Z1_1 => "Llanos Centrales - Mamíferos",
             Self::Z1_2 => "Llanos Centrales - Aves",
             Self::Z1_3 => "Llanos Centrales - Peces",
             Self::Z1_4 => "Llanos Centrales - Reptiles",
@@ -68,9 +68,12 @@ impl Escena {
 
     pub fn db_id(&self) -> &'static str {
         match self {
-            Self::E => "entrada",
-            Self::P1 => "p1", Self::P2 => "p2", Self::P3 => "p3",
-            Self::P4 => "p4", Self::P5 => "p5",
+            Self::E    => "entrada",
+            Self::P1   => "p1",
+            Self::P2   => "p2",
+            Self::P3   => "p3",
+            Self::P4   => "p4",
+            Self::P5   => "p5",
             Self::Z1_1 => "z1_1", Self::Z1_2 => "z1_2", Self::Z1_3 => "z1_3",
             Self::Z1_4 => "z1_4", Self::Z1_5 => "z1_5",
             Self::Z2_1 => "z2_1", Self::Z2_2 => "z2_2", Self::Z2_3 => "z2_3",
@@ -86,17 +89,17 @@ impl Escena {
 
     pub fn letra(&self) -> &'static str {
         match self {
-            Self::E => "E",
-            Self::P1 => "P1", Self::P2 => "P2", Self::P3 => "P3",
-            Self::P4 => "P4", Self::P5 => "P5",
+            Self::E    => "E",
+            Self::P1   => "P1", Self::P2  => "P2", Self::P3  => "P3",
+            Self::P4   => "P4", Self::P5  => "P5",
             Self::Z1_1 => "L1", Self::Z1_2 => "L2", Self::Z1_3 => "L3",
             Self::Z1_4 => "L4", Self::Z1_5 => "L5",
             Self::Z2_1 => "A1", Self::Z2_2 => "A2", Self::Z2_3 => "A3",
             Self::Z2_4 => "A4", Self::Z2_5 => "A5",
             Self::Z3_1 => "S1", Self::Z3_2 => "S2", Self::Z3_3 => "S3",
             Self::Z3_4 => "S4", Self::Z3_5 => "S5",
-            Self::Z4_1 => "P1", Self::Z4_2 => "P2", Self::Z4_3 => "P3",
-            Self::Z4_4 => "P4", Self::Z4_5 => "P5",
+            Self::Z4_1 => "G1", Self::Z4_2 => "G2", Self::Z4_3 => "G3",
+            Self::Z4_4 => "G4", Self::Z4_5 => "G5",
             Self::Z5_1 => "C1", Self::Z5_2 => "C2", Self::Z5_3 => "C3",
             Self::Z5_4 => "C4", Self::Z5_5 => "C5",
         }
@@ -112,9 +115,9 @@ impl Escena {
 
     pub fn pos_mapa(&self) -> (usize, usize) {
         match self {
-            Self::E => (2, 0),
-            Self::P1 => (0, 1), Self::P2 => (1, 1), Self::P3 => (2, 1),
-            Self::P4 => (3, 1), Self::P5 => (4, 1),
+            Self::E    => (2, 0),
+            Self::P1   => (0, 1), Self::P2 => (1, 1), Self::P3 => (2, 1),
+            Self::P4   => (3, 1), Self::P5 => (4, 1),
             Self::Z1_1 => (0, 2), Self::Z1_2 => (0, 3), Self::Z1_3 => (0, 4),
             Self::Z1_4 => (0, 5), Self::Z1_5 => (0, 6),
             Self::Z2_1 => (1, 2), Self::Z2_2 => (1, 3), Self::Z2_3 => (1, 4),
@@ -128,58 +131,56 @@ impl Escena {
         }
     }
 
-
-
-pub fn conexiones(&self) -> [Option<Escena>; 4] {
-    use Escena::*;
-    match self {
-        // E solo conecta con P3 (arriba)
-        E => [Some(P3), None, None, None],
-        
-        // ✅ CORREGIDO: Solo P3 conecta con E (índice 1 = Abajo)
+    pub fn conexiones(&self) -> [Option<Escena>; 4] {
+        use Escena::*;
         // [Arriba, Abajo, Izquierda, Derecha]
-        P1 => [Some(Z1_1), None, None, Some(P2)],
-        P2 => [Some(Z2_1), None, Some(P1), Some(P3)],
-        P3 => [Some(Z3_1), Some(E), Some(P2), Some(P4)],  // ← ÚNICO con acceso a E
-        P4 => [Some(Z4_1), None, Some(P3), Some(P5)],
-        P5 => [Some(Z5_1), None, Some(P4), None],
-        
-        // Zonas (todas igual)
-        Z1_1 => [Some(Z1_2), Some(P1), None, None],
-        Z1_2 => [Some(Z1_3), Some(Z1_1), None, None],
-        Z1_3 => [Some(Z1_4), Some(Z1_2), None, None],
-        Z1_4 => [Some(Z1_5), Some(Z1_3), None, None],
-        Z1_5 => [None, Some(Z1_4), None, None],
-        Z2_1 => [Some(Z2_2), Some(P2), None, None],
-        Z2_2 => [Some(Z2_3), Some(Z2_1), None, None],
-        Z2_3 => [Some(Z2_4), Some(Z2_2), None, None],
-        Z2_4 => [Some(Z2_5), Some(Z2_3), None, None],
-        Z2_5 => [None, Some(Z2_4), None, None],
-        Z3_1 => [Some(Z3_2), Some(P3), None, None],
-        Z3_2 => [Some(Z3_3), Some(Z3_1), None, None],
-        Z3_3 => [Some(Z3_4), Some(Z3_2), None, None],
-        Z3_4 => [Some(Z3_5), Some(Z3_3), None, None],
-        Z3_5 => [None, Some(Z3_4), None, None],
-        Z4_1 => [Some(Z4_2), Some(P4), None, None],
-        Z4_2 => [Some(Z4_3), Some(Z4_1), None, None],
-        Z4_3 => [Some(Z4_4), Some(Z4_2), None, None],
-        Z4_4 => [Some(Z4_5), Some(Z4_3), None, None],
-        Z4_5 => [None, Some(Z4_4), None, None],
-        Z5_1 => [Some(Z5_2), Some(P5), None, None],
-        Z5_2 => [Some(Z5_3), Some(Z5_1), None, None],
-        Z5_3 => [Some(Z5_4), Some(Z5_2), None, None],
-        Z5_4 => [Some(Z5_5), Some(Z5_3), None, None],
-        Z5_5 => [None, Some(Z5_4), None, None],
-    }
-}
+        match self {
+            E  => [Some(P3), None, None, None],
+            P1 => [Some(Z1_1), None, None, Some(P2)],
+            P2 => [Some(Z2_1), None, Some(P1), Some(P3)],
+            P3 => [Some(Z3_1), Some(E), Some(P2), Some(P4)],
+            P4 => [Some(Z4_1), None, Some(P3), Some(P5)],
+            P5 => [Some(Z5_1), None, Some(P4), None],
 
+            Z1_1 => [Some(Z1_2), Some(P1), None, None],
+            Z1_2 => [Some(Z1_3), Some(Z1_1), None, None],
+            Z1_3 => [Some(Z1_4), Some(Z1_2), None, None],
+            Z1_4 => [Some(Z1_5), Some(Z1_3), None, None],
+            Z1_5 => [None,       Some(Z1_4), None, None],
+
+            Z2_1 => [Some(Z2_2), Some(P2), None, None],
+            Z2_2 => [Some(Z2_3), Some(Z2_1), None, None],
+            Z2_3 => [Some(Z2_4), Some(Z2_2), None, None],
+            Z2_4 => [Some(Z2_5), Some(Z2_3), None, None],
+            Z2_5 => [None,       Some(Z2_4), None, None],
+
+            Z3_1 => [Some(Z3_2), Some(P3), None, None],
+            Z3_2 => [Some(Z3_3), Some(Z3_1), None, None],
+            Z3_3 => [Some(Z3_4), Some(Z3_2), None, None],
+            Z3_4 => [Some(Z3_5), Some(Z3_3), None, None],
+            Z3_5 => [None,       Some(Z3_4), None, None],
+
+            Z4_1 => [Some(Z4_2), Some(P4), None, None],
+            Z4_2 => [Some(Z4_3), Some(Z4_1), None, None],
+            Z4_3 => [Some(Z4_4), Some(Z4_2), None, None],
+            Z4_4 => [Some(Z4_5), Some(Z4_3), None, None],
+            Z4_5 => [None,       Some(Z4_4), None, None],
+
+            Z5_1 => [Some(Z5_2), Some(P5), None, None],
+            Z5_2 => [Some(Z5_3), Some(Z5_1), None, None],
+            Z5_3 => [Some(Z5_4), Some(Z5_2), None, None],
+            Z5_4 => [Some(Z5_5), Some(Z5_3), None, None],
+            Z5_5 => [None,       Some(Z5_4), None, None],
+        }
+    }
 
     pub fn color_fondo(&self) -> Color {
         match self.tipo() {
-            TipoZona::Entrada => Color::new(0.05, 0.05, 0.08, 1.0),
-            TipoZona::Pasillo => Color::new(0.07, 0.06, 0.04, 1.0),
+            TipoZona::Entrada  => Color::new(0.05, 0.05, 0.08, 1.0),
+            TipoZona::Pasillo  => Color::new(0.07, 0.06, 0.04, 1.0),
             TipoZona::Zona => {
-                let h = self.db_id().bytes().fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32));
+                let h = self.db_id().bytes()
+                    .fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32));
                 let r = 0.03 + (h % 5) as f32 * 0.01;
                 let g = 0.04 + ((h / 5) % 5) as f32 * 0.01;
                 let b = 0.03 + ((h / 25) % 5) as f32 * 0.01;
@@ -188,8 +189,20 @@ pub fn conexiones(&self) -> [Option<Escena>; 4] {
         }
     }
 
+    /// Solo la Entrada pura bloquea exploración
+    /// Los pasillos tienen su propio comportamiento (pesca, etc.)
+    pub fn es_solo_entrada(&self) -> bool {
+        *self == Escena::E
+    }
+
+    /// Mantener compatibilidad, pero ahora solo E es "entrada bloqueante"
     pub fn es_entrada(&self) -> bool {
-        matches!(self.tipo(), TipoZona::Entrada | TipoZona::Pasillo)
+        matches!(self.tipo(), TipoZona::Entrada)
+    }
+
+    /// Los pasillos no tienen animales para explorar directamente
+    pub fn es_pasillo(&self) -> bool {
+        matches!(self.tipo(), TipoZona::Pasillo)
     }
 
     pub fn es_pesca(&self) -> bool {
@@ -204,26 +217,31 @@ pub fn conexiones(&self) -> [Option<Escena>; 4] {
         *self == Escena::Z5_5
     }
 
-
-
-// src/escena.rs - Línea ~200 (función icono_categoria)
-pub fn icono_categoria(&self) -> &'static str {
-    match self {
-        // ✅ ESPECÍFICOS PRIMERO (sin duplicados)
-        Self::Z5_1 => "fosiles",
-        Self::Z3_5 | Self::Z4_2 => "anfibios",  // ← Z4_2 SOLO AQUÍ
-        Self::Z3_2 => "insectos",
-        Self::Z2_3 | Self::Z3_1 | Self::Z3_4 | Self::Z4_1 => "primates",
-        // ✅ Z4_3 MOVIDO AQUÍ (antes estaba en primates y mamiferos)
-        Self::Z4_3 => "mamiferos",
-        // ✅ LUEGO LOS GENERALES
-        Self::Z1_4 | Self::Z5_4 => "reptiles",
-        Self::Z1_3 | Self::Z4_5 => "peces",
-        Self::Z1_2 | Self::Z2_2 | Self::Z3_3 | Self::Z4_4 | Self::Z5_3 | Self::Z5_5 => "aves",
-        // ✅ DEFAULT AL FINAL (Z4_2 y Z4_3 ya están arriba)
-        Self::Z1_1 | Self::Z1_5 | Self::Z2_1 | Self::Z2_5 |
-        Self::Z5_2 => "mamiferos",
-        _ => "mamiferos",
+    /// Zonas sin exploración directa de animales (entrada o pasillo sin especial)
+    pub fn sin_exploracion(&self) -> bool {
+        match self {
+            Escena::E => true,
+            // P1-P4 son pasillos sin actividad especial
+            Escena::P1 | Escena::P2 | Escena::P3 | Escena::P4 => true,
+            // P5 tiene pesca, Z5_1 tiene museo, Z5_5 tiene foto
+            _ => false,
+        }
     }
-}
+
+    pub fn icono_categoria(&self) -> &'static str {
+        match self {
+            Self::Z5_1                                          => "fosiles",
+            Self::Z3_5 | Self::Z4_2                            => "anfibios",
+            Self::Z3_2                                         => "insectos",
+            Self::Z2_3 | Self::Z3_1 | Self::Z3_4 | Self::Z4_1 => "primates",
+            Self::Z4_3                                         => "mamiferos",
+            Self::Z1_4 | Self::Z5_4                            => "reptiles",
+            Self::Z1_3 | Self::Z4_5                            => "peces",
+            Self::Z1_2 | Self::Z2_2 | Self::Z3_3
+            | Self::Z4_4 | Self::Z5_3 | Self::Z5_5             => "aves",
+            Self::Z1_1 | Self::Z1_5 | Self::Z2_1
+            | Self::Z2_5 | Self::Z5_2                          => "mamiferos",
+            _                                                  => "mamiferos",
+        }
+    }
 }

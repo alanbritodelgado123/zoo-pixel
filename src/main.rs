@@ -1,3 +1,6 @@
+use macroquad::prelude::*;
+use std::collections::HashMap;
+
 mod animacion;
 mod audio;
 mod ciclo_dia;
@@ -20,9 +23,6 @@ use db::ZooDB;
 use estado::{Estado, Pantalla};
 use fondo::Fondos;
 use ui::UiRenderer;
-use escena::Escena;
-use macroquad::prelude::*;
-use std::collections::HashMap;
 
 fn window_conf() -> Conf {
     Conf {
@@ -41,82 +41,122 @@ async fn main() {
 
     // ✅ FUENTE
     let font_bytes = include_bytes!("../assets/fonts/PressStart2P.ttf");
-    let font = load_ttf_font_from_bytes(font_bytes).expect("No se pudo cargar la fuente");
+    let font = load_ttf_font_from_bytes(font_bytes)
+        .expect("No se pudo cargar la fuente");
 
     // ✅ SPRITESHEET
     let spritesheet_bytes = include_bytes!("../assets/fondos/spritesheet_vertical.png");
     let fondos = Fondos::new(spritesheet_bytes, 640.0, 480.0);
 
     // ✅ ÍCONOS DE CATEGORÍA
+    // Cada include_bytes! tiene tamaño distinto así que los cargamos uno a uno
     let mut iconos_categoria: HashMap<String, Texture2D> = HashMap::new();
 
-    let bytes_anfibios = include_bytes!("../assets/categorias/anfibios_inspyrenet.png");
-    let tex = Texture2D::from_file_with_format(&bytes_anfibios[..], Some(ImageFormat::Png));
-    tex.set_filter(FilterMode::Nearest);
-    iconos_categoria.insert("anfibios".to_string(), tex);
-    println!("✅ Icono cargado: anfibios");
-
-    let bytes_aves = include_bytes!("../assets/categorias/aves_inspyrenet.png");
-    let tex = Texture2D::from_file_with_format(&bytes_aves[..], Some(ImageFormat::Png));
-    tex.set_filter(FilterMode::Nearest);
-    iconos_categoria.insert("aves".to_string(), tex);
-    println!("✅ Icono cargado: aves");
-
-    let bytes_fosiles = include_bytes!("../assets/categorias/fosiles_inspyrenet.png");
-    let tex = Texture2D::from_file_with_format(&bytes_fosiles[..], Some(ImageFormat::Png));
-    tex.set_filter(FilterMode::Nearest);
-    iconos_categoria.insert("fosiles".to_string(), tex);
-    println!("✅ Icono cargado: fosiles");
-
-    let bytes_insectos = include_bytes!("../assets/categorias/insectos_inspyrenet.png");
-    let tex = Texture2D::from_file_with_format(&bytes_insectos[..], Some(ImageFormat::Png));
-    tex.set_filter(FilterMode::Nearest);
-    iconos_categoria.insert("insectos".to_string(), tex);
-    println!("✅ Icono cargado: insectos");
-
-    let bytes_mamiferos = include_bytes!("../assets/categorias/mamiferos_inspyrenet.png");
-    let tex = Texture2D::from_file_with_format(&bytes_mamiferos[..], Some(ImageFormat::Png));
-    tex.set_filter(FilterMode::Nearest);
-    iconos_categoria.insert("mamiferos".to_string(), tex);
-    println!("✅ Icono cargado: mamiferos");
-
-    let bytes_peces = include_bytes!("../assets/categorias/peces_inspyrenet.png");
-    let tex = Texture2D::from_file_with_format(&bytes_peces[..], Some(ImageFormat::Png));
-    tex.set_filter(FilterMode::Nearest);
-    iconos_categoria.insert("peces".to_string(), tex);
-    println!("✅ Icono cargado: peces");
-
-    let bytes_primates = include_bytes!("../assets/categorias/primates_inspyrenet.png");
-    let tex = Texture2D::from_file_with_format(&bytes_primates[..], Some(ImageFormat::Png));
-    tex.set_filter(FilterMode::Nearest);
-    iconos_categoria.insert("primates".to_string(), tex);
-    println!("✅ Icono cargado: primates");
-
-    let bytes_reptiles = include_bytes!("../assets/categorias/reptiles_inspyrenet.png");
-    let tex = Texture2D::from_file_with_format(&bytes_reptiles[..], Some(ImageFormat::Png));
-    tex.set_filter(FilterMode::Nearest);
-    iconos_categoria.insert("reptiles".to_string(), tex);
-    println!("✅ Icono cargado: reptiles");
+    {
+        let bytes = include_bytes!("../assets/categorias/anfibios_inspyrenet.png");
+        let tex = Texture2D::from_file_with_format(&bytes[..], Some(ImageFormat::Png));
+        tex.set_filter(FilterMode::Nearest);
+        iconos_categoria.insert("anfibios".to_string(), tex);
+    }
+    {
+        let bytes = include_bytes!("../assets/categorias/aves_inspyrenet.png");
+        let tex = Texture2D::from_file_with_format(&bytes[..], Some(ImageFormat::Png));
+        tex.set_filter(FilterMode::Nearest);
+        iconos_categoria.insert("aves".to_string(), tex);
+    }
+    {
+        let bytes = include_bytes!("../assets/categorias/fosiles_inspyrenet.png");
+        let tex = Texture2D::from_file_with_format(&bytes[..], Some(ImageFormat::Png));
+        tex.set_filter(FilterMode::Nearest);
+        iconos_categoria.insert("fosiles".to_string(), tex);
+    }
+    {
+        let bytes = include_bytes!("../assets/categorias/insectos_inspyrenet.png");
+        let tex = Texture2D::from_file_with_format(&bytes[..], Some(ImageFormat::Png));
+        tex.set_filter(FilterMode::Nearest);
+        iconos_categoria.insert("insectos".to_string(), tex);
+    }
+    {
+        let bytes = include_bytes!("../assets/categorias/mamiferos_inspyrenet.png");
+        let tex = Texture2D::from_file_with_format(&bytes[..], Some(ImageFormat::Png));
+        tex.set_filter(FilterMode::Nearest);
+        iconos_categoria.insert("mamiferos".to_string(), tex);
+    }
+    {
+        let bytes = include_bytes!("../assets/categorias/peces_inspyrenet.png");
+        let tex = Texture2D::from_file_with_format(&bytes[..], Some(ImageFormat::Png));
+        tex.set_filter(FilterMode::Nearest);
+        iconos_categoria.insert("peces".to_string(), tex);
+    }
+    {
+        let bytes = include_bytes!("../assets/categorias/primates_inspyrenet.png");
+        let tex = Texture2D::from_file_with_format(&bytes[..], Some(ImageFormat::Png));
+        tex.set_filter(FilterMode::Nearest);
+        iconos_categoria.insert("primates".to_string(), tex);
+    }
+    {
+        let bytes = include_bytes!("../assets/categorias/reptiles_inspyrenet.png");
+        let tex = Texture2D::from_file_with_format(&bytes[..], Some(ImageFormat::Png));
+        tex.set_filter(FilterMode::Nearest);
+        iconos_categoria.insert("reptiles".to_string(), tex);
+    }
+    println!("✅ 8 íconos de categoría cargados");
 
     // ✅ AUDIO
     let mut audio = AudioManager::new();
-    audio.set_fallback(include_bytes!("../assets/audio/ambiente/amb_entrada.ogg")).await;
-    audio.agregar_efecto("transicion", include_bytes!("../assets/audio/efectos/fx_transicion.wav")).await;
-    audio.agregar_efecto("boton", include_bytes!("../assets/audio/efectos/fx_boton.wav")).await;
+    audio.set_fallback(
+        include_bytes!("../assets/audio/ambiente/amb_entrada.ogg")
+    ).await;
+    audio.agregar_efecto(
+        "transicion",
+        include_bytes!("../assets/audio/efectos/fx_transicion.wav"),
+    ).await;
+    audio.agregar_efecto(
+        "boton",
+        include_bytes!("../assets/audio/efectos/fx_boton.wav"),
+    ).await;
 
-    // ✅ 8 AUDIOS DE CATEGORÍA (GRITOS DE ANIMALES)
-    audio.agregar_efecto("grito_anfibios", include_bytes!("../assets/audio/categorias/grito_anfibios.ogg")).await;
-    audio.agregar_efecto("grito_aves", include_bytes!("../assets/audio/categorias/grito_aves.ogg")).await;
-    audio.agregar_efecto("grito_fosiles", include_bytes!("../assets/audio/categorias/grito_fosiles.ogg")).await;
-    audio.agregar_efecto("grito_insectos", include_bytes!("../assets/audio/categorias/grito_insectos.ogg")).await;
-    audio.agregar_efecto("grito_mamiferos", include_bytes!("../assets/audio/categorias/grito_mamiferos.ogg")).await;
-    audio.agregar_efecto("grito_peces", include_bytes!("../assets/audio/categorias/grito_peces.ogg")).await;
-    audio.agregar_efecto("grito_primates", include_bytes!("../assets/audio/categorias/grito_primates.ogg")).await;
-    audio.agregar_efecto("grito_reptiles", include_bytes!("../assets/audio/categorias/grito_reptiles.ogg")).await;
+    // ✅ 8 AUDIOS DE CATEGORÍA (cada uno con su propio bloque para evitar &&[u8])
+    audio.agregar_efecto(
+        "grito_anfibios",
+        include_bytes!("../assets/audio/categorias/grito_anfibios.ogg"),
+    ).await;
+    audio.agregar_efecto(
+        "grito_aves",
+        include_bytes!("../assets/audio/categorias/grito_aves.ogg"),
+    ).await;
+    audio.agregar_efecto(
+        "grito_fosiles",
+        include_bytes!("../assets/audio/categorias/grito_fosiles.ogg"),
+    ).await;
+    audio.agregar_efecto(
+        "grito_insectos",
+        include_bytes!("../assets/audio/categorias/grito_insectos.ogg"),
+    ).await;
+    audio.agregar_efecto(
+        "grito_mamiferos",
+        include_bytes!("../assets/audio/categorias/grito_mamiferos.ogg"),
+    ).await;
+    audio.agregar_efecto(
+        "grito_peces",
+        include_bytes!("../assets/audio/categorias/grito_peces.ogg"),
+    ).await;
+    audio.agregar_efecto(
+        "grito_primates",
+        include_bytes!("../assets/audio/categorias/grito_primates.ogg"),
+    ).await;
+    audio.agregar_efecto(
+        "grito_reptiles",
+        include_bytes!("../assets/audio/categorias/grito_reptiles.ogg"),
+    ).await;
     println!("✅ 8 audios de categoría cargados");
 
-    for escena in Escena::TODAS {
-        audio.agregar_ambiente(*escena, include_bytes!("../assets/audio/ambiente/amb_entrada.ogg")).await;
+    // ✅ AMBIENTES (uno por escena, usando fallback)
+    for escena in escena::Escena::TODAS {
+        audio.agregar_ambiente(
+            *escena,
+            include_bytes!("../assets/audio/ambiente/amb_entrada.ogg"),
+        ).await;
     }
 
     // ✅ TEXTURAS DE GUÍAS
@@ -136,30 +176,34 @@ async fn main() {
         Some(tex)
     };
 
+    // ✅ INICIALIZAR UI Y ESTADO
     let ui = UiRenderer::new(font, textura_eli, textura_ani, iconos_categoria);
     let mut estado = Estado::new(&db);
     estado.duracion_transicion = (audio.duracion_transicion() + 0.2)
         .max(config::TRANSITION_MIN);
     audio.iniciar_ambiente(estado.escena);
 
-    println!("🎮 Zoo Pixel v0.5.4 iniciado correctamente");
+    println!("🎮 Zoo Pixel v0.6.0 iniciado");
     println!("📍 Escena inicial: {:?}", estado.escena);
     println!("📐 Resolución: {}x{}", screen_width(), screen_height());
 
+    // ✅ GAME LOOP
     loop {
         let dt = get_frame_time().min(0.1);
 
+        // Input
         for accion in input::leer_teclado() {
             estado.procesar_accion(accion, &db);
         }
-
         for accion in input::leer_tactil(&estado) {
             estado.procesar_accion(accion, &db);
         }
 
-        estado.update(dt, &db);  // ✅ Pasar db
+        // Update
+        estado.update(dt, &db);
         audio.update(dt);
 
+        // Volumen desde config activa
         let (vol_m, vol_e) = if matches!(estado.pantalla, Pantalla::Config) {
             (estado.menu_config.volumen_musica, estado.menu_config.volumen_efectos)
         } else {
@@ -168,108 +212,34 @@ async fn main() {
         audio.set_volumen_musica(vol_m);
         audio.set_volumen_efectos(vol_e);
 
+        // Transición de audio
         if let Some(destino) = estado.necesita_transicion_audio.take() {
             audio.transicionar_a(destino);
         }
 
-        // ✅ NO reproducir doble audio (solo grito de categoría)
-        // if estado.necesita_sonido_animal {
-        //     estado.necesita_sonido_animal = false;
-        //     audio.efecto_unico("boton");
-        // }
+        // Render
+        ui.render(&estado, &fondos, &audio);
 
-        ui.render(&estado, &fondos, &audio);  // ✅ Pasar audio
-
+        // Overlay PC (indicadores de botones)
         let mostrar_overlay_pc = estado.mostrar_overlay
             && !cfg!(target_os = "android")
             && !estado.en_pantalla_info()
             && !estado.dialogo.activo
-            && !estado.eventos.hay_evento()
             && !estado.en_transicion();
         if mostrar_overlay_pc {
-            render_pc_overlay(&estado, &ui.font);
+            ui::render_pc_overlay(&estado, &ui.font);
         }
 
+        // Filtro CRT
         let crt_activo = if matches!(estado.pantalla, Pantalla::Config) {
             estado.menu_config.crt
         } else {
             estado.save.config.crt
         };
         if crt_activo {
-            render_crt();
+            ui::render_crt();
         }
 
         next_frame().await;
-    }
-}
-
-fn render_pc_overlay(estado: &Estado, font: &Font) {
-    let s = config::scale();
-    let sw = screen_width();
-    let sh = screen_height();
-    let fs = config::fs_pct(0.028);
-    let margin = 8.0 * s;
-    let gap = 12.0 * s;
-    let shadow_offset = (1.5 * s).max(1.0);
-    let pad_x = 10.0 * s;
-    let pad_y = 5.0 * s;
-    let indicators: &[(&str, f32)] = &[
-        ("Z", estado.indicador_z_pressed),
-        ("X", estado.indicador_x_pressed),
-        ("M", 0.0),
-        ("L", 0.0),
-    ];
-    let total_w: f32 = indicators.iter().map(|(k, _)| {
-        measure_text(&format!("[{}]", k), Some(font), fs, 1.0).width + gap
-    }).sum::<f32>() - gap;
-    let th = config::text_height(font, fs);
-    let group_x = (sw - total_w) / 2.0;
-    let text_y = sh - margin;
-    draw_rectangle(
-        group_x - pad_x,
-        text_y - th - pad_y,
-        total_w + pad_x * 2.0,
-        th + pad_y * 2.0,
-        Color::new(0.15, 0.15, 0.15, 0.6),
-    );
-    let mut x = group_x;
-    for (key, pressed) in indicators {
-        let texto = format!("[{}]", key);
-        let tw = measure_text(&texto, Some(font), fs, 1.0).width;
-        let color = if *pressed > 0.0 { config::COLOR_ACCENT } else { WHITE };
-        draw_text_ex(
-            &texto,
-            x + shadow_offset,
-            text_y + shadow_offset,
-            TextParams {
-                font: Some(font),
-                font_size: fs,
-                color: Color::new(0.0, 0.0, 0.0, 0.7),
-                ..Default::default()
-            },
-        );
-        draw_text_ex(
-            &texto,
-            x,
-            text_y,
-            TextParams {
-                font: Some(font),
-                font_size: fs,
-                color,
-                ..Default::default()
-            },
-        );
-        x += tw + gap;
-    }
-}
-
-fn render_crt() {
-    let sw = screen_width();
-    let sh = screen_height();
-    let gap = (sh / 200.0).max(2.0).min(4.0);
-    let mut y = 0.0;
-    while y < sh {
-        draw_rectangle(0.0, y, sw, 1.0, Color::new(0.0, 0.0, 0.0, 0.15));
-        y += gap;
     }
 }
