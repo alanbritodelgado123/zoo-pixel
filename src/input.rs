@@ -1,5 +1,10 @@
+// src/input.rs
 use macroquad::prelude::*;
 use crate::estado::Estado;
+
+// =====================================================================
+//  ACCIONES
+// =====================================================================
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Accion {
@@ -14,9 +19,13 @@ pub enum Accion {
     Libreta,
 }
 
+// =====================================================================
+//  INPUT DE TECLADO (PC)
+// =====================================================================
+
 pub fn leer_teclado() -> Vec<Accion> {
     let mut acciones = Vec::new();
-    
+
     if is_key_pressed(KeyCode::Up)     { acciones.push(Accion::Arriba); }
     if is_key_pressed(KeyCode::Down)   { acciones.push(Accion::Abajo); }
     if is_key_pressed(KeyCode::Left)   { acciones.push(Accion::Izquierda); }
@@ -27,71 +36,105 @@ pub fn leer_teclado() -> Vec<Accion> {
     if is_key_pressed(KeyCode::Escape) { acciones.push(Accion::BotonB); }
     if is_key_pressed(KeyCode::M)      { acciones.push(Accion::Mapa); }
     if is_key_pressed(KeyCode::L)      { acciones.push(Accion::Libreta); }
-    
+
     acciones
 }
 
-// ✅ NUEVO: Input táctil para Android (landscape)
+// =====================================================================
+//  INPUT TÁCTIL (Android landscape)
+// =====================================================================
+
 pub fn leer_tactil(estado: &Estado) -> Vec<Accion> {
     let mut acciones = Vec::new();
-    
+
     if !estado.plataforma.es_movil() {
         return acciones;
     }
-    
-    let touches = touches();
+
+    let touches_list = touches();
     let sw = screen_width();
     let sh = screen_height();
-    
-    // Zonas de botones en landscape (800x480)
-    let btn_size = sh * 0.12;
-    let margin = sh * 0.04;
-    
-    for touch in touches {
+
+    // Zonas de la pantalla (landscape 800x480)
+    let btn_size  = sh * 0.14;
+    let margin    = sh * 0.05;
+    let dpad_size = sh * 0.35;
+
+    for touch in &touches_list {
+        if touch.phase != TouchPhase::Started {
+            continue;
+        }
+
         let x = touch.position.x;
         let y = touch.position.y;
-        
-        // Botón A (abajo derecha)
-        if x > sw - btn_size - margin && y > sh - btn_size - margin {
-            acciones.push(Accion::BotonA);
-        }
-        
-        // Botón B (abajo derecha, más adentro)
-        if x > sw - btn_size * 2.5 - margin && y > sh - btn_size - margin
-            && x < sw - btn_size - margin {
-            acciones.push(Accion::BotonB);
-        }
-        
-        // Stick virtual (abajo izquierda)
-        if x < btn_size * 2.0 + margin && y > sh - btn_size * 2.0 - margin {
-            let centro_x = margin + btn_size;
-            let centro_y = sh - margin - btn_size;
-            let dx = x - centro_x;
-            let dy = y - centro_y;
-            let distancia = (dx * dx + dy * dy).sqrt();
-            
-            if distancia > btn_size * 0.3 {
-                if dx.abs() > dy.abs() {
-                    if dx > 0.0 { acciones.push(Accion::Derecha); }
-                    else { acciones.push(Accion::Izquierda); }
+
+        // ── D-pad (izquierda abajo) ──────────────────────────────────
+        let dpad_cx = margin + dpad_size / 2.0;
+        let dpad_cy = sh - margin - dpad_size / 2.0;
+
+        if (x - dpad_cx).abs() < dpad_size / 2.0
+            && (y - dpad_cy).abs() < dpad_size / 2.0
+        {
+            let dx = x - dpad_cx;
+            let dy = y - dpad_cy;
+            if dx.abs() > dy.abs() {
+                if dx > 0.0 {
+                    acciones.push(Accion::Derecha);
                 } else {
-                    if dy > 0.0 { acciones.push(Accion::Abajo); }
-                    else { acciones.push(Accion::Arriba); }
+                    acciones.push(Accion::Izquierda);
+                }
+            } else if dy.abs() > dpad_size * 0.15 {
+                if dy > 0.0 {
+                    acciones.push(Accion::Abajo);
+                } else {
+                    acciones.push(Accion::Arriba);
                 }
             }
+            continue;
         }
-        
-        // Botón Mapa (arriba derecha)
-        if x > sw - btn_size - margin && y < margin + btn_size {
+
+        // ── Botón A (derecha abajo, más a la derecha) ────────────────
+        let btn_a_x = sw - margin - btn_size * 0.5;
+        let btn_a_y = sh - margin - btn_size * 0.5;
+        if (x - btn_a_x).abs() < btn_size * 0.7
+            && (y - btn_a_y).abs() < btn_size * 0.7
+        {
+            acciones.push(Accion::BotonA);
+            continue;
+        }
+
+        // ── Botón B (derecha abajo, más a la izquierda) ──────────────
+        let btn_b_x = sw - margin - btn_size * 1.8;
+        let btn_b_y = sh - margin - btn_size * 0.5;
+        if (x - btn_b_x).abs() < btn_size * 0.7
+            && (y - btn_b_y).abs() < btn_size * 0.7
+        {
+            acciones.push(Accion::BotonB);
+            continue;
+        }
+
+        // ── Botón Mapa (arriba derecha) ──────────────────────────────
+        let btn_m_x = sw - margin - btn_size * 0.5;
+        let btn_m_y = margin + btn_size * 0.5;
+        if (x - btn_m_x).abs() < btn_size * 0.7
+            && (y - btn_m_y).abs() < btn_size * 0.7
+        {
             acciones.push(Accion::Mapa);
+            continue;
         }
-        
-        // Botón Libreta (arriba derecha, más adentro)
-        if x > sw - btn_size * 2.5 - margin && y < margin + btn_size
-            && x < sw - btn_size - margin {
+
+        // ── Botón Libreta (arriba derecha, más adentro) ──────────────
+        let btn_l_x = sw - margin - btn_size * 1.8;
+        let btn_l_y = margin + btn_size * 0.5;
+        if (x - btn_l_x).abs() < btn_size * 0.7
+            && (y - btn_l_y).abs() < btn_size * 0.7
+        {
             acciones.push(Accion::Libreta);
+            continue;
         }
     }
-    
+
+    // Deduplicar acciones (si hay múltiples touches simultáneos)
+    acciones.dedup();
     acciones
 }
