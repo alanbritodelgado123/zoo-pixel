@@ -246,10 +246,18 @@ impl AudioManager {
     }
 
     /// Reproduce el grito de una categoría de animal
-    pub fn reproducir_grito_categoria(&self, categoria: &str) {
-        let nombre = format!("grito_{}", categoria.to_lowercase());
-        self.reproducir_efecto_interno(&nombre);
+pub fn reproducir_grito_categoria(&self, categoria: &str) {
+    let nombre = format!("grito_{}", categoria.to_lowercase());
+    if let Some(sound) = self.efectos.get(&nombre) {
+        play_sound(
+            sound,
+            PlaySoundParams {
+                looped: false,
+                volume: self.volumen_efectos * 0.4, // Volumen reducido al 40%
+            },
+        );
     }
+}
 
     // ── Consultas ────────────────────────────────────────────────────
 

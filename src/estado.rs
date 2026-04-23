@@ -1,4 +1,3 @@
-// src/estado.rs
 use std::collections::HashSet;
 use macroquad::rand::gen_range;
 use crate::config;
@@ -15,9 +14,6 @@ use crate::eventos::SistemaEventos;
 
 const LIBRETA_POR_PAGINA: usize = 5;
 
-// =====================================================================
-//  PANTALLA
-// =====================================================================
 #[derive(PartialEq)]
 pub enum Pantalla {
     Inicio,
@@ -28,9 +24,6 @@ pub enum Pantalla {
     LibretaCompleta,
 }
 
-// =====================================================================
-//  MODO VISTA
-// =====================================================================
 pub enum ModoVista {
     Normal,
     Seleccion {
@@ -57,9 +50,6 @@ pub enum ModoVista {
     },
 }
 
-// =====================================================================
-//  MENÚ CONFIG
-// =====================================================================
 pub struct MenuConfig {
     pub seleccion: usize,
     pub volumen_musica: f32,
@@ -84,9 +74,6 @@ impl MenuConfig {
     ];
 }
 
-// =====================================================================
-//  TRANSICIÓN
-// =====================================================================
 pub struct Transicion {
     pub destino: Escena,
     pub timer: f32,
@@ -94,9 +81,6 @@ pub struct Transicion {
     pub cambiada: bool,
 }
 
-// =====================================================================
-//  INFO DE ANIMAL (pantalla unificada)
-// =====================================================================
 pub struct AnimalInfo {
     pub nombre_comun: String,
     pub nombre_cientifico: String,
@@ -105,7 +89,6 @@ pub struct AnimalInfo {
     pub timer: f32,
     pub terminado: bool,
     pub categoria: String,
-    /// Hint personalizado para el botón Z en esta pantalla
     pub hint_z: String,
 }
 
@@ -168,9 +151,6 @@ impl AnimalInfo {
     }
 }
 
-// =====================================================================
-//  ESTADO PRINCIPAL
-// =====================================================================
 pub struct Estado {
     pub pantalla: Pantalla,
     pub escena: Escena,
@@ -198,11 +178,12 @@ pub struct Estado {
     pub necesita_transicion_audio: Option<Escena>,
     pub libreta_seleccion: usize,
     pub libreta_info: Option<AnimalInfo>,
-    /// Pantalla de info unificada (animal, fósil, pez capturado, mensaje)
     pub info_overlay: Option<AnimalInfo>,
     pub ya_vio_intro: bool,
     pub dialogo_callejon_mostrado: HashSet<String>,
     pub dialogo_museo_ani_mostrado: bool,
+    pub dialogo_pesca_mostrado: bool,
+    pub dialogo_foto_mostrado: bool,
 }
 
 impl Estado {
@@ -253,10 +234,10 @@ impl Estado {
             ya_vio_intro,
             dialogo_callejon_mostrado: HashSet::new(),
             dialogo_museo_ani_mostrado: false,
+            dialogo_pesca_mostrado: false,
+            dialogo_foto_mostrado: false,
         }
     }
-
-    // ── Helpers ─────────────────────────────────────────────────────
 
     pub fn en_pantalla_info(&self) -> bool {
         matches!(self.modo,
@@ -282,8 +263,6 @@ impl Estado {
         }
     }
 
-    // ── Update ───────────────────────────────────────────────────────
-
     pub fn update(&mut self, dt: f32, db: &ZooDB) {
         self.plataforma.update();
         if self.indicador_z_pressed > 0.0 { self.indicador_z_pressed -= dt * 3.0; }
@@ -303,40 +282,37 @@ impl Estado {
                     self.guardar_estado();
                 }
             }
-// src/estado.rs — dentro de update(), rama Pantalla::Juego
-Pantalla::Juego => {
-    self.ciclo.update(dt);
-    self.eventos.update(dt);
+            Pantalla::Juego => {
+                self.ciclo.update(dt);
+                self.eventos.update(dt);
 
-    // ✅ Actualizar diálogo en juego (callejones, museo, etc.)
-    if self.dialogo.activo {
-        self.dialogo.update(dt);
-    }
+                if self.dialogo.activo {
+                    self.dialogo.update(dt);
+                }
 
-    self.verificar_dialogo_callejon(db);
+                self.verificar_dialogo_callejon(db);
 
-    // Transición de escena
-    if let Some(ref mut t) = self.transicion {
-        t.timer += dt;
-        if t.timer >= t.duracion / 2.0 && !t.cambiada {
-            self.escena = t.destino;
-            self.visitadas.insert(t.destino);
-            t.cambiada = true;
-        }
-        if t.timer >= t.duracion {
-            self.transicion = None;
-            self.guardar_estado();
-        }
-    }
+                if let Some(ref mut t) = self.transicion {
+                    t.timer += dt;
+                    if t.timer >= t.duracion / 2.0 && !t.cambiada {
+                        self.escena = t.destino;
+                        self.visitadas.insert(t.destino);
+                        t.cambiada = true;
+                    }
+                    if t.timer >= t.duracion {
+                        self.transicion = None;
+                        self.guardar_estado();
+                    }
+                }
 
-    self.update_typewriter(dt);
+                self.update_typewriter(dt);
 
-    if let Some(ref mut info) = self.info_overlay {
-        info.update(dt);
-    }
+                if let Some(ref mut info) = self.info_overlay {
+                    info.update(dt);
+                }
 
-    self.pesca.update(dt);
-}
+                self.pesca.update(dt);
+            }
             Pantalla::Config => {}
             Pantalla::MapaCompleto => {}
             Pantalla::LibretaCompleta => {
@@ -349,11 +325,11 @@ Pantalla::Juego => {
 
     fn verificar_dialogo_callejon(&mut self, db: &ZooDB) {
         let escena_id = self.escena.db_id();
-        // Solo zonas Zx-5 (terminan en "_5" y no son pasillos)
-        if !escena_id.ends_with("_5") || self.escena.es_pasillo() {
-            return;
-        }
-        if self.dialogo.activo {
+        // Zonas Zx_5: zona_05, zona_10, zona_15, zona_20, zona_25
+        let es_callejon = matches!(escena_id,
+            "zona_05" | "zona_10" | "zona_15" | "zona_20" | "zona_25"
+        );
+        if !es_callejon || self.dialogo.activo {
             return;
         }
         let clave = format!("callejon_{}", escena_id);
@@ -407,12 +383,9 @@ Pantalla::Juego => {
         self.save.guardar();
     }
 
-    // ── Cambio de escena ─────────────────────────────────────────────
-
     pub fn cambiar_escena(&mut self, destino: Escena) {
         if destino == self.escena { return; }
 
-        // Cerrar minijuegos al salir de su zona
         if self.escena.es_pesca() && !destino.es_pesca() {
             self.pesca.cerrar();
         }
@@ -420,7 +393,11 @@ Pantalla::Juego => {
             self.museo.cerrar();
         }
 
-        // Limpiar estado de vista
+        // Resetear flags de diálogo al cambiar de zona
+        if destino.es_pesca() && destino != self.escena {
+            // No resetear: el diálogo de pesca se muestra una sola vez por sesión
+        }
+
         self.modo = ModoVista::Normal;
         self.info_overlay = None;
 
@@ -433,8 +410,6 @@ Pantalla::Juego => {
         self.necesita_transicion_audio = Some(destino);
     }
 
-    // ── Procesado de acciones ────────────────────────────────────────
-
     pub fn procesar_accion(&mut self, accion: Accion, db: &ZooDB) {
         if accion == Accion::BotonA { self.indicador_z_pressed = 1.0; }
         if accion == Accion::BotonB { self.indicador_x_pressed = 1.0; }
@@ -446,7 +421,6 @@ Pantalla::Juego => {
             Pantalla::MapaCompleto    => self.input_mapa(accion),
             Pantalla::LibretaCompleta => self.input_libreta(accion),
             Pantalla::Juego => {
-                // Diálogo tiene prioridad máxima
                 if self.dialogo.activo {
                     if matches!(accion, Accion::BotonA | Accion::BotonB) {
                         self.dialogo.avanzar();
@@ -461,7 +435,6 @@ Pantalla::Juego => {
                     return;
                 }
 
-                // Info overlay (unificado: animales, fósiles, peces, mensajes)
                 if let Some(ref mut info) = self.info_overlay {
                     match accion {
                         Accion::BotonA => {
@@ -479,7 +452,6 @@ Pantalla::Juego => {
                     return;
                 }
 
-                // Minijuegos
                 if self.pesca.activo {
                     self.input_pesca(accion, db);
                     return;
@@ -489,7 +461,6 @@ Pantalla::Juego => {
                     return;
                 }
 
-                // Atajos globales
                 if accion == Accion::Mapa {
                     self.mapa_cursor = self.escena;
                     self.pantalla = Pantalla::MapaCompleto;
@@ -512,8 +483,6 @@ Pantalla::Juego => {
             }
         }
     }
-
-    // ── Inputs por pantalla ──────────────────────────────────────────
 
     fn input_inicio(&mut self, accion: Accion, db: &ZooDB) {
         match accion {
@@ -662,22 +631,17 @@ Pantalla::Juego => {
         }
     }
 
-    // ── Input Pesca ──────────────────────────────────────────────────
-
     fn input_pesca(&mut self, accion: Accion, db: &ZooDB) {
         match accion {
             Accion::BotonA => {
                 match self.pesca.fase {
                     FasePesca::Picando => {
-                        // tirar() retorna el pez capturado si tuvo éxito
                         if let Some(pez) = self.pesca.tirar() {
-                            // Registrar en libreta y save
                             if let Some(animal) = db.animal_por_nombre(&pez.nombre) {
                                 self.libreta.registrar_animal(&animal);
                                 self.save.marcar_animal_visto(&pez.nombre);
                                 self.save.guardar();
                             }
-                            // Mostrar info overlay unificado
                             self.info_overlay = Some(AnimalInfo {
                                 nombre_comun: pez.nombre,
                                 nombre_cientifico: pez.cientifico,
@@ -691,15 +655,11 @@ Pantalla::Juego => {
                                 categoria: pez.categoria,
                                 hint_z: "Z: Siguiente pesca".to_string(),
                             });
-                            // Avanzar intento (pero no cerrar aún, lo hace al cerrar overlay)
                             self.pesca.siguiente(db);
                         }
                     }
                     FasePesca::Resultado => {
-                        // Se escapó, siguiente intento
-                        if !self.pesca.siguiente(db) {
-                            // Se agotaron los intentos
-                        }
+                        self.pesca.siguiente(db);
                     }
                     _ => {}
                 }
@@ -710,8 +670,6 @@ Pantalla::Juego => {
             _ => {}
         }
     }
-
-    // ── Input Museo ──────────────────────────────────────────────────
 
     fn input_museo(&mut self, accion: Accion, db: &ZooDB) {
         match accion {
@@ -725,7 +683,6 @@ Pantalla::Juego => {
                     let idx_quiz    = total_exhibiciones + 1;
 
                     if self.museo.indice < total_exhibiciones {
-                        // Ver fósil → info overlay unificado
                         let dino = self.museo.exhibiciones[self.museo.indice].clone();
                         self.info_overlay = Some(AnimalInfo {
                             nombre_comun: dino.nombre,
@@ -748,7 +705,6 @@ Pantalla::Juego => {
                     if terminada {
                         if self.museo.fosil_encontrado {
                             if let Some(ref dino) = self.museo.dino_excavado {
-                                // Registrar el fósil en libreta
                                 if let Some(animal) = db.animal_por_nombre(&dino.nombre) {
                                     self.libreta.registrar_animal(&animal);
                                     self.save.marcar_animal_visto(&dino.nombre);
@@ -860,8 +816,6 @@ Pantalla::Juego => {
         }
     }
 
-    // ── Input Juego Normal ───────────────────────────────────────────
-
     fn input_juego(&mut self, accion: Accion, db: &ZooDB) {
         if self.en_transicion() { return; }
 
@@ -888,27 +842,54 @@ Pantalla::Juego => {
                         // Pesca
                         if self.escena.es_pesca() {
                             if !self.pesca.activo {
+                                if !self.dialogo_pesca_mostrado {
+                                    let dialogos = db.dialogos_por_contexto("pesca_bienvenida");
+                                    if !dialogos.is_empty() {
+                                        self.dialogo.iniciar_desde_db(dialogos);
+                                        self.dialogo_pesca_mostrado = true;
+                                        return;
+                                    }
+                                }
                                 self.pesca.iniciar(db);
                             }
                             return;
                         }
 
-                        // Zonas sin exploración (E, P1-P4)
+                        // Zonas sin exploración
                         if self.escena.sin_exploracion() { return; }
 
-                        // Foto (Z5-5)
-                        if self.escena.es_foto() {
-                            let animales = db.animales_zona(&self.escena);
-                            if animales.is_empty() { return; }
-                            let idx  = gen_range(0, animales.len());
-                            let celda = gen_range(0, 4_usize);
-                            self.modo = ModoVista::Foto {
-                                animales, indice_actual: idx, celda,
-                                foto_tomada: false, texto_pos: 0, timer: 0.0,
-                                terminado: false, ya_vistos: HashSet::new(),
-                            };
-                            return;
-                        }
+// Foto (Z5_5 = zona_25: Aves Llamativas)
+if self.escena.es_foto() {
+    if !self.dialogo_foto_mostrado {
+        let dialogos = db.dialogos_por_contexto("foto_bienvenida");
+        if !dialogos.is_empty() {
+            self.dialogo.iniciar_desde_db(dialogos);
+            self.dialogo_foto_mostrado = true;
+            return;
+        }
+    }
+    // ✅ FILTRAR: Solo animales de categoría "aves"
+    let todos = db.animales_zona(&self.escena);
+    let animales: Vec<Animal> = todos
+        .into_iter()
+        .filter(|a| a.categoria == "aves")
+        .collect();
+    
+    if animales.is_empty() { return; }
+    let idx   = gen_range(0, animales.len());
+    let celda = gen_range(0, 4_usize);
+    self.modo = ModoVista::Foto {
+        animales,
+        indice_actual: idx,
+        celda,
+        foto_tomada: false,
+        texto_pos: 0,
+        timer: 0.0,
+        terminado: false,
+        ya_vistos: HashSet::new(),
+    };
+    return;
+}
 
                         // Exploración normal
                         let animales = db.animales_zona(&self.escena);
@@ -1010,23 +991,22 @@ Pantalla::Juego => {
                         .collect();
                     if disponibles.is_empty() {
                         self.info_overlay = Some(AnimalInfo::mensaje(
-                            "¡Aviario completado!",
+                            "¡Zona completada!",
                             &format!(
-                                "Has fotografiado las {} aves del aviario. ¡Excelente trabajo de campo!",
+                                "Has explorado los {} animales de esta zona. ¡Excelente trabajo de campo!",
                                 animales.len()
                             ),
                         ));
                         self.modo = ModoVista::Normal;
                     } else {
                         *indice_actual = disponibles[gen_range(0, disponibles.len())];
-                        *celda    = gen_range(0, 4_usize);
-                        *foto_tomada = false;
-                        *texto_pos   = 0;
-                        *timer       = 0.0;
-                        *terminado   = false;
+                        *celda        = gen_range(0, 4_usize);
+                        *foto_tomada  = false;
+                        *texto_pos    = 0;
+                        *timer        = 0.0;
+                        *terminado    = false;
                     }
                 } else {
-                    // Completar texto si se presiona cualquier botón
                     *texto_pos = animales[*indice_actual].descripcion.chars().count();
                     *terminado = true;
                 }

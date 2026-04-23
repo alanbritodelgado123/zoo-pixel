@@ -202,112 +202,119 @@ impl UiRenderer {
     //  DIÁLOGO (con scroll mejorado)
     // ═════════════════════════════════════════════════════════════════
     fn render_dialogo(&self, estado: &Estado) {
-        let sw = screen_width();
-        let sh = screen_height();
-        let sb = safe_bottom();
-        let box_h = sh * 0.25;
-        let box_y = sb - box_h - 8.0;
-        let box_x = 8.0;
-        let box_w = sw - 16.0;
+    let sw = screen_width();
+    let sh = screen_height();
+    let sb = safe_bottom();
+    let box_h = sh * 0.25;
+    let box_y = sb - box_h - 8.0;
+    let box_x = 8.0;
+    let box_w = sw - 16.0;
 
-        draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.5));
-        draw_rectangle(box_x, box_y, box_w, box_h, COLOR_DIALOG_BG);
-        draw_rectangle_lines(box_x, box_y, box_w, box_h, 2.0, COLOR_BORDER);
+    draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.5));
+    draw_rectangle(box_x, box_y, box_w, box_h, COLOR_DIALOG_BG);
+    draw_rectangle_lines(box_x, box_y, box_w, box_h, 2.0, COLOR_BORDER);
 
-        // ── Guía (arriba del diálogo) ───────────────────────────────
-        if let Some(tex) = self.get_textura_guia(estado.dialogo.personaje_actual()) {
-            let max_w = sw * 0.35;
-            let max_h = sh * 0.25;
-            let tex_aspect = tex.width() / tex.height();
-            let area_aspect = max_w / max_h;
-            let (guia_w, guia_h) = if area_aspect > tex_aspect {
-                (max_h * tex_aspect, max_h)
-            } else {
-                (max_w, max_w / tex_aspect)
-            };
-            let guia_x = (sw - guia_w) / 2.0;
-            let guia_y = box_y - guia_h - 5.0;
-            draw_texture_ex(
-                tex,
-                guia_x,
-                guia_y,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(vec2(guia_w, guia_h)),
-                    ..Default::default()
-                },
-            );
-        }
+    // ── Guía: 25% izquierda + corte mitad superior ───────────────
+    if let Some(tex) = self.get_textura_guia(estado.dialogo.personaje_actual()) {
+        let max_w = sw * 0.30;
+        let max_h = sh * 0.28;
+        let tex_aspect = tex.width() / tex.height();
+        let area_aspect = max_w / max_h;
 
-        let padding = 10.0;
-        let inner_w = box_w - padding * 2.0;
+        let (guia_w, guia_h) = if area_aspect > tex_aspect {
+            (max_h * tex_aspect, max_h)
+        } else {
+            (max_w, max_w / tex_aspect)
+        };
 
-        // ── Nombre del personaje ────────────────────────────────────
-        let personaje = estado.dialogo.personaje_actual();
-        let fs_p = fs_adaptativo(personaje, &self.font, fs_pct(0.028), inner_w);
-        let th_p = text_height(&self.font, fs_p);
+        // Posición: 25% desde la izquierda, centrado en ese punto
+        let guia_cx = sw * 0.25;
+        let guia_x  = guia_cx - guia_w / 2.0;
+        let guia_y  = box_y - guia_h - 4.0;
+
+        // Corte: solo mitad superior del sprite (torso hacia arriba)
+        let src = Rect::new(
+            0.0,
+            0.0,
+            tex.width(),
+            tex.height() * 0.55, // 55% superior para incluir cabeza y torso
+        );
+
+        draw_texture_ex(
+            tex,
+            guia_x,
+            guia_y,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(guia_w, guia_h)),
+                source: Some(src),
+                ..Default::default()
+            },
+        );
+    }
+
+    let padding = 10.0;
+    let inner_w = box_w - padding * 2.0;
+
+    // Nombre del personaje
+    let personaje = estado.dialogo.personaje_actual();
+    let fs_p = fs_adaptativo(personaje, &self.font, fs_pct(0.028), inner_w);
+    let th_p = text_height(&self.font, fs_p);
+    draw_text_ex(
+        personaje,
+        box_x + padding,
+        box_y + padding + th_p,
+        TextParams {
+            font: Some(&self.font),
+            font_size: fs_p,
+            color: COLOR_ACCENT,
+            ..Default::default()
+        },
+    );
+
+    // Texto del diálogo con scroll automático
+    let texto = estado.dialogo.texto_visible();
+    let fs_d = fs_pct(0.024);
+    let text_top    = box_y + padding + th_p + 6.0;
+    let text_bottom = box_y + box_h - padding - 15.0;
+    let lines   = self.word_wrap(&texto, fs_d, inner_w);
+    let line_h  = text_height(&self.font, fs_d) * 1.2;
+    let max_vis = ((text_bottom - text_top) / line_h) as usize;
+
+    let start = if lines.len() > max_vis { lines.len() - max_vis } else { 0 };
+
+    let mut cy = text_top;
+    for line in lines.iter().skip(start) {
+        if cy + line_h > text_bottom { break; }
+        cy += line_h;
         draw_text_ex(
-            personaje,
+            line,
             box_x + padding,
-            box_y + padding + th_p,
+            cy,
             TextParams {
                 font: Some(&self.font),
-                font_size: fs_p,
+                font_size: fs_d,
+                color: COLOR_TEXT,
+                ..Default::default()
+            },
+        );
+    }
+
+    // Indicador de continuar
+    if estado.dialogo.terminado_linea {
+        draw_text_ex(
+            "▼",
+            box_x + box_w - 20.0,
+            box_y + box_h - 8.0,
+            TextParams {
+                font: Some(&self.font),
+                font_size: fs_pct(0.02),
                 color: COLOR_ACCENT,
                 ..Default::default()
             },
         );
-
-        // ── Texto del diálogo (con scroll automático) ───────────────
-        let texto = estado.dialogo.texto_visible();
-        let fs_d = fs_pct(0.024);
-        let text_top = box_y + padding + th_p + 6.0;
-        let text_bottom = box_y + box_h - padding - 15.0;
-        let lines = self.word_wrap(&texto, fs_d, inner_w);
-        let line_h = text_height(&self.font, fs_d) * 1.2;
-        let max_visible = ((text_bottom - text_top) / line_h) as usize;
-
-        // ✅ Scroll automático: mostrar las últimas líneas
-        let start = if lines.len() > max_visible {
-            lines.len() - max_visible
-        } else {
-            0
-        };
-
-        let mut cy = text_top;
-        for line in lines.iter().skip(start) {
-            if cy + line_h > text_bottom {
-                break;
-            }
-            cy += line_h;
-            draw_text_ex(
-                line,
-                box_x + padding,
-                cy,
-                TextParams {
-                    font: Some(&self.font),
-                    font_size: fs_d,
-                    color: COLOR_TEXT,
-                    ..Default::default()
-                },
-            );
-        }
-
-        // ── Indicador de "continuar" ────────────────────────────────
-        if estado.dialogo.terminado_linea {
-            draw_text_ex(
-                "▼",
-                box_x + box_w - 20.0,
-                box_y + box_h - 8.0,
-                TextParams {
-                    font: Some(&self.font),
-                    font_size: fs_pct(0.02),
-                    color: COLOR_ACCENT,
-                    ..Default::default()
-                },
-            );
-        }
     }
+}
 
     // ═════════════════════════════════════════════════════════════════
     //  HELPERS UI

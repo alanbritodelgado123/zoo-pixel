@@ -38,52 +38,67 @@ impl Escena {
             Self::P3   => "Pasillo 3",
             Self::P4   => "Pasillo 4",
             Self::P5   => "Pasillo 5 - Acuario",
-            Self::Z1_1 => "Llanos Centrales - Mamíferos",
-            Self::Z1_2 => "Llanos Centrales - Aves",
-            Self::Z1_3 => "Llanos Centrales - Peces",
-            Self::Z1_4 => "Llanos Centrales - Reptiles",
-            Self::Z1_5 => "Llanos Occidentales",
-            Self::Z2_1 => "Cordillera de los Andes",
-            Self::Z2_2 => "Andes - Aves",
-            Self::Z2_3 => "Cordillera de la Costa",
-            Self::Z2_4 => "Páramos de Mérida",
-            Self::Z2_5 => "Sierra de San Luis",
-            Self::Z3_1 => "Selva Amazónica",
-            Self::Z3_2 => "Amazonas - Insectos",
-            Self::Z3_3 => "Serranía de la Neblina",
-            Self::Z3_4 => "Selva de Imataca",
-            Self::Z3_5 => "Cerro Yapacana",
-            Self::Z4_1 => "Sierra de Perijá",
-            Self::Z4_2 => "Parque Nacional Canaima",
-            Self::Z4_3 => "Delta del Orinoco I",
-            Self::Z4_4 => "Delta del Orinoco II",
-            Self::Z4_5 => "Río Orinoco",
-            Self::Z5_1 => "Península de Paria - Museo",
-            Self::Z5_2 => "Isla de Margarita",
-            Self::Z5_3 => "Costa Caribe Oriental",
-            Self::Z5_4 => "Los Roques",
-            Self::Z5_5 => "Lago de Maracaibo - Aviario",
+            Self::Z1_1 => "Zona 1: Llanos Centrales",
+            Self::Z1_2 => "Zona 2: Cordillera de los Andes",
+            Self::Z1_3 => "Zona 3: Selva Amazonica",
+            Self::Z1_4 => "Zona 4: Sierra de Perija",
+            Self::Z1_5 => "Zona 5: Peninsula de Paria",
+            Self::Z2_1 => "Zona 6: Isla de Margarita",
+            Self::Z2_2 => "Zona 7: Costa Caribe Oriental",
+            Self::Z2_3 => "Zona 8: Delta del Orinoco",
+            Self::Z2_4 => "Zona 9: Parque Nacional Canaima",
+            Self::Z2_5 => "Zona 10: Serrania de la Neblina",
+            Self::Z3_1 => "Zona 11: Cordillera de la Costa",
+            Self::Z3_2 => "Zona 12: Lago de Maracaibo",
+            Self::Z3_3 => "Zona 13: Sierra de San Luis",
+            Self::Z3_4 => "Zona 14: Los Roques",
+            Self::Z3_5 => "Zona 15: Rio Orinoco",
+            Self::Z4_1 => "Zona 16: Selva de Imataca",
+            Self::Z4_2 => "Zona 17: Paramos de Merida",
+            Self::Z4_3 => "Zona 18: Llanos Occidentales",
+            Self::Z4_4 => "Zona 19: Peninsula de la Guajira",
+            Self::Z4_5 => "Zona 20: Cerro Yapacana",
+            Self::Z5_1 => "Zona 21: Museo Paleontologia",
+            Self::Z5_2 => "Zona 22: Peces de Pesca",
+            Self::Z5_3 => "Zona 23: Reptiles y Anfibios",
+            Self::Z5_4 => "Zona 24: Insectos",
+            Self::Z5_5 => "Zona 25: Aves muy llamativas de Venezuela",
         }
     }
 
     pub fn db_id(&self) -> &'static str {
         match self {
             Self::E    => "entrada",
-            Self::P1   => "p1",
-            Self::P2   => "p2",
-            Self::P3   => "p3",
-            Self::P4   => "p4",
-            Self::P5   => "p5",
-            Self::Z1_1 => "z1_1", Self::Z1_2 => "z1_2", Self::Z1_3 => "z1_3",
-            Self::Z1_4 => "z1_4", Self::Z1_5 => "z1_5",
-            Self::Z2_1 => "z2_1", Self::Z2_2 => "z2_2", Self::Z2_3 => "z2_3",
-            Self::Z2_4 => "z2_4", Self::Z2_5 => "z2_5",
-            Self::Z3_1 => "z3_1", Self::Z3_2 => "z3_2", Self::Z3_3 => "z3_3",
-            Self::Z3_4 => "z3_4", Self::Z3_5 => "z3_5",
-            Self::Z4_1 => "z4_1", Self::Z4_2 => "z4_2", Self::Z4_3 => "z4_3",
-            Self::Z4_4 => "z4_4", Self::Z4_5 => "z4_5",
-            Self::Z5_1 => "z5_1", Self::Z5_2 => "z5_2", Self::Z5_3 => "z5_3",
-            Self::Z5_4 => "z5_4", Self::Z5_5 => "z5_5",
+            Self::P1   => "pasillo_01",
+            Self::P2   => "pasillo_02",
+            Self::P3   => "pasillo_03",
+            Self::P4   => "pasillo_04",
+            Self::P5   => "pasillo_05",
+            Self::Z1_1 => "zona_01",
+            Self::Z1_2 => "zona_02",
+            Self::Z1_3 => "zona_03",
+            Self::Z1_4 => "zona_04",
+            Self::Z1_5 => "zona_05",
+            Self::Z2_1 => "zona_06",
+            Self::Z2_2 => "zona_07",
+            Self::Z2_3 => "zona_08",
+            Self::Z2_4 => "zona_09",
+            Self::Z2_5 => "zona_10",
+            Self::Z3_1 => "zona_11",
+            Self::Z3_2 => "zona_12",
+            Self::Z3_3 => "zona_13",
+            Self::Z3_4 => "zona_14",
+            Self::Z3_5 => "zona_15",
+            Self::Z4_1 => "zona_16",
+            Self::Z4_2 => "zona_17",
+            Self::Z4_3 => "zona_18",
+            Self::Z4_4 => "zona_19",
+            Self::Z4_5 => "zona_20",
+            Self::Z5_1 => "zona_21",
+            Self::Z5_2 => "zona_22",
+            Self::Z5_3 => "zona_23",
+            Self::Z5_4 => "zona_24",
+            Self::Z5_5 => "zona_25",
         }
     }
 
@@ -92,16 +107,16 @@ impl Escena {
             Self::E    => "E",
             Self::P1   => "P1", Self::P2  => "P2", Self::P3  => "P3",
             Self::P4   => "P4", Self::P5  => "P5",
-            Self::Z1_1 => "L1", Self::Z1_2 => "L2", Self::Z1_3 => "L3",
-            Self::Z1_4 => "L4", Self::Z1_5 => "L5",
-            Self::Z2_1 => "A1", Self::Z2_2 => "A2", Self::Z2_3 => "A3",
-            Self::Z2_4 => "A4", Self::Z2_5 => "A5",
-            Self::Z3_1 => "S1", Self::Z3_2 => "S2", Self::Z3_3 => "S3",
-            Self::Z3_4 => "S4", Self::Z3_5 => "S5",
-            Self::Z4_1 => "G1", Self::Z4_2 => "G2", Self::Z4_3 => "G3",
-            Self::Z4_4 => "G4", Self::Z4_5 => "G5",
-            Self::Z5_1 => "C1", Self::Z5_2 => "C2", Self::Z5_3 => "C3",
-            Self::Z5_4 => "C4", Self::Z5_5 => "C5",
+            Self::Z1_1 => "1",  Self::Z1_2 => "2",  Self::Z1_3 => "3",
+            Self::Z1_4 => "4",  Self::Z1_5 => "5",
+            Self::Z2_1 => "6",  Self::Z2_2 => "7",  Self::Z2_3 => "8",
+            Self::Z2_4 => "9",  Self::Z2_5 => "10",
+            Self::Z3_1 => "11", Self::Z3_2 => "12", Self::Z3_3 => "13",
+            Self::Z3_4 => "14", Self::Z3_5 => "15",
+            Self::Z4_1 => "16", Self::Z4_2 => "17", Self::Z4_3 => "18",
+            Self::Z4_4 => "19", Self::Z4_5 => "20",
+            Self::Z5_1 => "21", Self::Z5_2 => "22", Self::Z5_3 => "23",
+            Self::Z5_4 => "24", Self::Z5_5 => "25",
         }
     }
 
@@ -133,7 +148,6 @@ impl Escena {
 
     pub fn conexiones(&self) -> [Option<Escena>; 4] {
         use Escena::*;
-        // [Arriba, Abajo, Izquierda, Derecha]
         match self {
             E  => [Some(P3), None, None, None],
             P1 => [Some(Z1_1), None, None, Some(P2)],
@@ -189,18 +203,14 @@ impl Escena {
         }
     }
 
-    /// Solo la Entrada pura bloquea exploración
-    /// Los pasillos tienen su propio comportamiento (pesca, etc.)
     pub fn es_solo_entrada(&self) -> bool {
         *self == Escena::E
     }
 
-    /// Mantener compatibilidad, pero ahora solo E es "entrada bloqueante"
     pub fn es_entrada(&self) -> bool {
         matches!(self.tipo(), TipoZona::Entrada)
     }
 
-    /// Los pasillos no tienen animales para explorar directamente
     pub fn es_pasillo(&self) -> bool {
         matches!(self.tipo(), TipoZona::Pasillo)
     }
@@ -217,31 +227,27 @@ impl Escena {
         *self == Escena::Z5_5
     }
 
-    /// Zonas sin exploración directa de animales (entrada o pasillo sin especial)
     pub fn sin_exploracion(&self) -> bool {
         match self {
             Escena::E => true,
-            // P1-P4 son pasillos sin actividad especial
             Escena::P1 | Escena::P2 | Escena::P3 | Escena::P4 => true,
-            // P5 tiene pesca, Z5_1 tiene museo, Z5_5 tiene foto
             _ => false,
         }
     }
 
     pub fn icono_categoria(&self) -> &'static str {
         match self {
-            Self::Z5_1                                          => "fosiles",
-            Self::Z3_5 | Self::Z4_2                            => "anfibios",
-            Self::Z3_2                                         => "insectos",
-            Self::Z2_3 | Self::Z3_1 | Self::Z3_4 | Self::Z4_1 => "primates",
-            Self::Z4_3                                         => "mamiferos",
-            Self::Z1_4 | Self::Z5_4                            => "reptiles",
-            Self::Z1_3 | Self::Z4_5                            => "peces",
-            Self::Z1_2 | Self::Z2_2 | Self::Z3_3
-            | Self::Z4_4 | Self::Z5_3 | Self::Z5_5             => "aves",
-            Self::Z1_1 | Self::Z1_5 | Self::Z2_1
-            | Self::Z2_5 | Self::Z5_2                          => "mamiferos",
-            _                                                  => "mamiferos",
+            Self::Z5_1                          => "fosiles",
+            Self::Z2_4 | Self::Z4_5            => "anfibios",
+            Self::Z5_4                          => "insectos",
+            Self::Z1_4 | Self::Z2_3
+            | Self::Z3_1 | Self::Z3_4          => "primates",
+            Self::Z2_3 | Self::Z2_1            => "mamiferos",
+            Self::Z5_5                          => "reptiles",
+            Self::Z5_3 | Self::Z3_5            => "peces",
+            Self::Z5_2 | Self::Z2_2 | Self::Z2_5
+            | Self::Z3_3 | Self::Z3_2          => "aves",
+            _                                   => "mamiferos",
         }
     }
 }

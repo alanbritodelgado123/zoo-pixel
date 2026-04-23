@@ -1,24 +1,30 @@
 {
-  "escena": "Z5_5",
+  "escena": "P5",
   "visitadas": [
-    "Z5_2",
-    "Z5_5",
-    "P3",
+    "P1",
+    "Z1_1",
+    "Z4_5",
     "Z5_3",
-    "P5",
+    "Z5_1",
+    "P2",
+    "Z1_5",
+    "Z1_2",
     "E",
-    "P4",
+    "Z4_3",
+    "Z1_3",
     "Z5_4",
-    "Z5_1"
+    "Z4_4",
+    "Z5_5",
+    "P5",
+    "Z4_1",
+    "Z5_2",
+    "P3",
+    "Z1_4",
+    "P4",
+    "Z4_2"
   ],
   "animales_vistos": [
-    "Pez Loro",
-    "Valentón",
-    "Venado de Margarita",
-    "Chavarri",
-    "Flamenco del Caribe",
-    "Tortuga Carey",
-    "Pato Cuchara"
+    "Colibri Tijereta de Paria"
   ],
   "config": {
     "volumen_musica": 0.6,
