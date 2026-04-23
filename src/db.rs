@@ -621,35 +621,43 @@ impl ZooDB {
 
             // ── Foto Z5_5 ────────────────────────────────────────────
             ("foto_bienvenida", "Guia Eli", 1,
-             "¡Bienvenido a la Zona de Reptiles y Anfibios! Esta es la zona más diversa del parque."),
+             "¡Bienvenido a la Zona de Aves muy llamativas! Esta es la zona más increíble del parque."),
             ("foto_bienvenida", "Guia Eli", 2,
-             "Venezuela alberga más de 340 especies de reptiles y 200 de anfibios gracias a su variedad de pisos térmicos."),
+             "Venezuela alberga las especies más hermosas"),
             ("foto_bienvenida", "Guia Eli", 3,
-             "Presiona Z para explorar y conocer estas increíbles criaturas. ¡Cada especie tiene su historia!"),
+             "Presiona Z para tomar fotografías, y terminar el recorrido con broche de oro"),
 
             // ── Callejones Zx_5 ──────────────────────────────────────
             ("callejon_zona_05", "Guia Eli", 1,
              "¡Estás en la Península de Paria, hogar de especies únicas endémicas!"),
             ("callejon_zona_05", "Guia Eli", 2,
-             "El Colibrí Tijereta de Paria solo existe aquí. Regresa para explorar otras zonas."),
+             "El Colibrí Tijereta de Paria solo existe aquí."),
+            ("callejon_zona_05", "Guia Eli", 3,
+             "Regresa a los pasillos para explorar otras zonas."),
 
             ("callejon_zona_10", "Guia Eli", 1,
              "La Serranía de la Neblina alberga especies que no existen en ningún otro lugar del planeta."),
             ("callejon_zona_10", "Guia Eli", 2,
              "Sus bosques neblinosos son uno de los ecosistemas más biodiversos de Venezuela."),
+            ("callejon_zona_10", "Guia Eli", 3,
+             "Regresa a los pasillos para explorar otras zonas."),
 
             ("callejon_zona_15", "Guia Eli", 1,
              "El Río Orinoco es uno de los ríos más largos y biodiversos de Sudamérica."),
             ("callejon_zona_15", "Guia Eli", 2,
              "Hogar de la tonina rosada y el caimán del Orinoco. ¡Una joya natural única!"),
+                         ("callejon_zona_15", "Guia Eli", 3,
+             "Regresa a los pasillos para explorar otras zonas."),
 
             ("callejon_zona_20", "Guia Eli", 1,
              "El Cerro Yapacana es uno de los tepuyes más remotos del Amazonas venezolano."),
             ("callejon_zona_20", "Guia Eli", 2,
              "Alberga especies únicas que evolucionaron en aislamiento durante millones de años."),
+            ("callejon_zona_20", "Guia Eli", 3,
+             "Regresa a los pasillos para explorar otras zonas."),
 
             ("callejon_zona_25", "Guia Eli", 1,
-             "¡Has llegado al final de la Zona de Reptiles y Anfibios! Increíble biodiversidad, ¿verdad?"),
+             "¡Has llegado al final de esta sección! Increíble biodiversidad, ¿verdad?"),
             ("callejon_zona_25", "Guia Eli", 2,
              "Regresa a los pasillos para seguir explorando otros ecosistemas del parque."),
         ];

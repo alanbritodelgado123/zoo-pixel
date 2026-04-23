@@ -49,7 +49,6 @@ async fn main() {
     let fondos = Fondos::new(spritesheet_bytes, 640.0, 480.0);
 
     // ✅ ÍCONOS DE CATEGORÍA
-    // Cada include_bytes! tiene tamaño distinto así que los cargamos uno a uno
     let mut iconos_categoria: HashMap<String, Texture2D> = HashMap::new();
 
     {
@@ -116,7 +115,7 @@ async fn main() {
         include_bytes!("../assets/audio/efectos/fx_boton.wav"),
     ).await;
 
-    // ✅ 8 AUDIOS DE CATEGORÍA (cada uno con su propio bloque para evitar &&[u8])
+    // ✅ 8 AUDIOS DE CATEGORÍA
     audio.agregar_efecto(
         "grito_anfibios",
         include_bytes!("../assets/audio/categorias/grito_anfibios.ogg"),
@@ -183,7 +182,7 @@ async fn main() {
         .max(config::TRANSITION_MIN);
     audio.iniciar_ambiente(estado.escena);
 
-    println!("🎮 Zoo Pixel v0.6.0 iniciado");
+    println!("🎮 Zoo Pixel v0.6.1 iniciado");
     println!("📍 Escena inicial: {:?}", estado.escena);
     println!("📐 Resolución: {}x{}", screen_width(), screen_height());
 
@@ -191,7 +190,7 @@ async fn main() {
     loop {
         let dt = get_frame_time().min(0.1);
 
-        // Input
+        // ── Input ────────────────────────────────────────────────────
         for accion in input::leer_teclado() {
             estado.procesar_accion(accion, &db);
         }
@@ -199,9 +198,11 @@ async fn main() {
             estado.procesar_accion(accion, &db);
         }
 
-        // Update
+        // ── Update ───────────────────────────────────────────────────
         estado.update(dt, &db);
         audio.update(dt);
+
+        // ── Audio ────────────────────────────────────────────────────
 
         // Volumen desde config activa
         let (vol_m, vol_e) = if matches!(estado.pantalla, Pantalla::Config) {
@@ -212,12 +213,38 @@ async fn main() {
         audio.set_volumen_musica(vol_m);
         audio.set_volumen_efectos(vol_e);
 
-        // Transición de audio
+        // Transición de audio entre escenas
         if let Some(destino) = estado.necesita_transicion_audio.take() {
             audio.transicionar_a(destino);
         }
 
-        // Render
+        // ✅ Gritos de categoría (FIX: resetear flag después de reproducir)
+        if estado.necesita_sonido_animal {
+            // Obtener categoría del animal actual según el modo de vista
+            let categoria = match &estado.modo {
+                estado::ModoVista::ViendoAnimal { animal, .. } => {
+                    Some(&animal.categoria)
+                }
+                estado::ModoVista::Foto { animales, indice_actual, foto_tomada, .. } => {
+                    if *foto_tomada {
+                        Some(&animales[*indice_actual].categoria)
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            };
+
+            // Reproducir sonido si hay categoría válida
+            if let Some(cat) = categoria {
+                audio.reproducir_grito_categoria(cat);
+            }
+
+            // ✅ RESETEAR FLAG (esto evita el loop infinito)
+            estado.necesita_sonido_animal = false;
+        }
+
+        // ── Render ───────────────────────────────────────────────────
         ui.render(&estado, &fondos, &audio);
 
         // Overlay PC (indicadores de botones)
