@@ -1,7 +1,7 @@
 // src/minijuego.rs
 use macroquad::prelude::*;
 use macroquad::rand::gen_range;
-use crate::config;
+//use crate::config;
 use crate::db::{ZooDB, QuizPreguntaDB};
 
 // =====================================================================

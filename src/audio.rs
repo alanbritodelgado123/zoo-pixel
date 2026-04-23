@@ -77,6 +77,7 @@ impl AudioManager {
                     self.duraciones.insert(nombre.to_string(), dur);
                 }
                 self.efectos.insert(nombre.to_string(), sound);
+                println!("  ✓ Efecto cargado: {}", nombre);
             }
             Err(e) => println!("❌ Error efecto {}: {:?}", nombre, e),
         }
@@ -226,12 +227,10 @@ impl AudioManager {
         }
     }
 
-    /// Reproduce un efecto (permite superposición)
     pub fn efecto(&self, nombre: &str) {
         self.reproducir_efecto_interno(nombre);
     }
 
-    /// Reproduce un efecto deteniéndolo antes si ya estaba sonando
     pub fn efecto_unico(&self, nombre: &str) {
         if let Some(sound) = self.efectos.get(nombre) {
             stop_sound(sound);
@@ -245,19 +244,19 @@ impl AudioManager {
         }
     }
 
-    /// Reproduce el grito de una categoría de animal
-pub fn reproducir_grito_categoria(&self, categoria: &str) {
-    let nombre = format!("grito_{}", categoria.to_lowercase());
-    if let Some(sound) = self.efectos.get(&nombre) {
-        play_sound(
-            sound,
-            PlaySoundParams {
-                looped: false,
-                volume: self.volumen_efectos * 0.4, // Volumen reducido al 40%
-            },
-        );
+    /// ✅ Reproduce el grito de una categoría de animal (40% volumen)
+    pub fn reproducir_grito_categoria(&self, categoria: &str) {
+        let nombre = format!("grito_{}", categoria.to_lowercase());
+        if let Some(sound) = self.efectos.get(&nombre) {
+            play_sound(
+                sound,
+                PlaySoundParams {
+                    looped: false,
+                    volume: self.volumen_efectos * 0.9,
+                },
+            );
+        }
     }
-}
 
     // ── Consultas ────────────────────────────────────────────────────
 
