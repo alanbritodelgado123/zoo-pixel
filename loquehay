@@ -1,0 +1,571 @@
+[user@archlinux loquehayquemeter]$ ls -lR
+.:
+total 0
+drwxr-xr-x 1 user user   6 abr 23 13:38 audiocategoria
+drwxr-xr-x 1 user user 178 abr 23 15:19 fondos
+drwxr-xr-x 1 user user  24 abr 23 15:18 individuales
+
+./audiocategoria:
+total 0
+drwxr-xr-x 1 user user 274 abr 23 13:49 wav
+
+./audiocategoria/wav:
+total 608
+-rw-r--r-- 1 user user  49182 abr 23 13:37 grito_anfibios.wav
+-rw-r--r-- 1 user user  40912 abr 23 13:37 grito_aves.wav
+-rw-r--r-- 1 user user 118156 abr 23 13:38 grito_fosiles.wav
+-rw-r--r-- 1 user user  61314 abr 23 13:37 grito_insectos.wav
+-rw-r--r-- 1 user user 124994 abr 23 13:37 grito_mamiferos.wav
+-rw-r--r-- 1 user user  29932 abr 23 13:36 grito_peces.wav
+-rw-r--r-- 1 user user  82818 abr 23 13:36 grito_primates.wav
+-rw-r--r-- 1 user user  99910 abr 23 13:38 grito_reptiles.wav
+
+./fondos:
+total 20560
+-rw-rw-r-- 1 user user 2776915 abr 23 13:53 anfibios.png
+-rw-rw-r-- 1 user user 2552915 abr 23 13:14 Aves.png
+-rw-rw-r-- 1 user user 2816067 abr 23 13:35 fosiles.png
+-rw-rw-r-- 1 user user 2788107 abr 23 13:42 insectos.png
+-rw-rw-r-- 1 user user 1858570 abr 23 14:13 mamiferos.png
+-rw-rw-r-- 1 user user 2789873 abr 23 14:17 peces.png
+-rw-rw-r-- 1 user user 2778471 abr 23 14:29 primates.png
+-rw-rw-r-- 1 user user 2674800 abr 23 14:35 reptiles.png
+
+./individuales:
+total 0
+drwxrwxr-x 1 user user 20 abr 23 14:09 zoo_animages
+
+./individuales/zoo_animages:
+total 0
+drwxrwxr-x 1 user user 40 abr 20 09:51 Z1
+drwxrwxr-x 1 user user 40 abr 20 09:51 Z2
+drwxrwxr-x 1 user user 40 abr 20 09:51 Z3
+drwxrwxr-x 1 user user 40 abr 20 09:51 Z4
+drwxr-xr-x 1 user user 40 abr 23 14:11 Z5
+
+./individuales/zoo_animages/Z1:
+total 0
+drwxrwxr-x 1 user user 274 abr 20 09:51 Z1-1
+drwxrwxr-x 1 user user 344 abr 20 09:51 Z1-2
+drwxrwxr-x 1 user user 276 abr 20 09:51 Z1-3
+drwxrwxr-x 1 user user 276 abr 20 09:51 Z1-4
+drwxrwxr-x 1 user user 284 abr 20 09:51 Z1-5
+
+./individuales/zoo_animages/Z1/Z1-1:
+total 3080
+-rw-r--r-- 1 user user 770525 abr 20 09:34 'Babilla (Caiman crocodilus).jpeg'
+-rw-r--r-- 1 user user 721069 abr 20 09:33 'Chigüire (Hydrochoerus hydrochaeris).jpeg'
+-rw-r--r-- 1 user user 808866 abr 20 09:38 'Cunaguaro (Leopardus pardalis).jpeg'
+-rw-r--r-- 1 user user 842937 abr 20 09:34 'Garza Real (Ardea alba).jpeg'
+
+./individuales/zoo_animages/Z1/Z1-2:
+total 2612
+-rw-r--r-- 1 user user 585439 abr 20 09:39 'Cóndor de los Andes (Vultur gryphus).jpeg'
+-rw-r--r-- 1 user user 707442 abr 20 09:39 'Oso Frontino (Tremarctos ornatus).jpeg'
+-rw-r--r-- 1 user user 632956 abr 20 09:40 'Paují de Copete de Piedra (Pauxi pauxi).jpeg'
+-rw-r--r-- 1 user user 743265 abr 20 09:41 'Venado Caramerudo (Odocoileus virginianus).jpeg'
+
+./individuales/zoo_animages/Z1/Z1-3:
+total 3016
+-rw-r--r-- 1 user user 886484 abr 20 09:43 'Anaconda Verde (Eunectes murinus).jpeg'
+-rw-r--r-- 1 user user 620190 abr 20 09:42 'Guacamaya Bandera (Ara macao).jpeg'
+-rw-r--r-- 1 user user 858902 abr 20 09:42 'Jaguar (Panthera onca).jpeg'
+-rw-r--r-- 1 user user 714255 abr 20 09:43 'Mono Araguato (Alouatta seniculus).jpeg'
+
+./individuales/zoo_animages/Z1/Z1-4:
+total 3016
+-rw-r--r-- 1 user user 886484 abr 20 09:43 'Anaconda Verde (Eunectes murinus).jpeg'
+-rw-r--r-- 1 user user 620190 abr 20 09:42 'Guacamaya Bandera (Ara macao).jpeg'
+-rw-r--r-- 1 user user 858902 abr 20 09:42 'Jaguar (Panthera onca).jpeg'
+-rw-r--r-- 1 user user 714255 abr 20 09:43 'Mono Araguato (Alouatta seniculus).jpeg'
+
+./individuales/zoo_animages/Z1/Z1-5:
+total 2740
+-rw-r--r-- 1 user user 808954 abr 20 09:49 'Marimonda de la Sierra (Ateles hybridus).jpeg'
+-rw-r--r-- 1 user user 649376 abr 20 09:48 'Pava Negra (Aburria aburri).jpeg'
+-rw-r--r-- 1 user user 654709 abr 20 09:47 'Puma (Puma concolor).jpeg'
+-rw-r--r-- 1 user user 684059 abr 20 09:47 'Tucán Real (Ramphastos sulfuratus).jpeg'
+
+./individuales/zoo_animages/Z2:
+total 0
+drwxrwxr-x 1 user user 398 abr 20 09:51 Z2-1
+drwxrwxr-x 1 user user 340 abr 20 09:51 Z2-2
+drwxrwxr-x 1 user user 348 abr 20 09:51 Z2-3
+drwxrwxr-x 1 user user 324 abr 20 09:51 Z2-4
+drwxrwxr-x 1 user user 392 abr 20 09:51 Z2-5
+
+./individuales/zoo_animages/Z2/Z2-1:
+total 2860
+-rw-r--r-- 1 user user 747994 abr 20 09:12 'Cotorra Margariteña (Amazona barbadensis).jpeg'
+-rw-r--r-- 1 user user 855424 abr 20 09:15 'Cunaguaro de Margarita (Leopardus pardalis pardalis).jpeg'
+-rw-r--r-- 1 user user 611274 abr 20 09:14 'Ñángaro (Psittacara wagleri).jpeg'
+-rw-r--r-- 1 user user 706318 abr 20 09:11 'Venado de Margarita (Odocoileus virginianus margaritae).jpeg'
+
+./individuales/zoo_animages/Z2/Z2-2:
+total 2768
+-rw-r--r-- 1 user user 662022 abr 20 09:21 'Caimán de la Costa (Crocodylus acutus).jpeg'
+-rw-r--r-- 1 user user 702746 abr 20 09:20 'Corocoro Rojo (Eudocimus ruber).jpeg'
+-rw-r--r-- 1 user user 672417 abr 20 09:19 'Flamenco del Caribe (Phoenicopterus ruber).jpeg'
+-rw-r--r-- 1 user user 787114 abr 20 09:19 'Tortuga Carey (Eretmochelys imbricata).jpeg'
+
+./individuales/zoo_animages/Z2/Z2-3:
+total 2732
+-rw-r--r-- 1 user user 598099 abr 20 09:22 'Garzón Soldado (Jabiru mycteria).jpeg'
+-rw-r--r-- 1 user user 740530 abr 20 09:22 'Manatí del Caribe (Trichechus manatus).jpeg'
+-rw-r--r-- 1 user user 787001 abr 20 09:24 'Mono Capuchino del Orinoco (Cebus albifrons).jpeg'
+-rw-r--r-- 1 user user 660916 abr 20 09:22 'Perro de Agua (Pteronura brasiliensis).jpeg'
+
+./individuales/zoo_animages/Z2/Z2-4:
+total 3152
+-rw-r--r-- 1 user user 719448 abr 20 09:26 'Harpía (Harpia harpyja).jpeg'
+-rw-r--r-- 1 user user 981870 abr 20 09:26 'Oso Hormiguero Gigante (Myrmecophaga tridactyla).jpeg'
+-rw-r--r-- 1 user user 712928 abr 20 09:25 'Sapito Minero (Dendrobates leucomelas).jpeg'
+-rw-r--r-- 1 user user 805539 abr 20 09:26 'Tepuihyla (Tepuihyla rodriguezi).jpeg'
+
+./individuales/zoo_animages/Z2/Z2-5:
+total 2580
+-rw-r--r-- 1 user user 772202 abr 20 09:28 'Gallo de Roca Guayanés (Rupicola rupicola).jpeg'
+-rw-r--r-- 1 user user 596529 abr 20 09:29 'Mono Viuda (Cheracebus lugens).jpeg'
+-rw-r--r-- 1 user user 634856 abr 20 09:29 'Saltarín de Cabeza Dorada (Ceratopipra erythrocephala).jpeg'
+-rw-r--r-- 1 user user 633613 abr 20 09:29 'Uacarí de Cabeza Negra (Cacajao melanocephalus).jpeg'
+
+./individuales/zoo_animages/Z3:
+total 0
+drwxrwxr-x 1 user user 310 abr 20 09:51 Z3-1
+drwxrwxr-x 1 user user 308 abr 20 09:51 Z3-2
+drwxrwxr-x 1 user user 304 abr 20 09:51 Z3-3
+drwxrwxr-x 1 user user 284 abr 20 09:51 Z3-4
+drwxrwxr-x 1 user user 322 abr 20 09:51 Z3-5
+
+./individuales/zoo_animages/Z3/Z3-1:
+total 3056
+-rw-r--r-- 1 user user 731716 abr 19 15:17 'Paují de Copete (Pauxi pauxi).jpeg'
+-rw-r--r-- 1 user user 797193 abr 19 15:19 'Quetzal Dorado (Pharomachrus fulgidus).jpeg'
+-rw-r--r-- 1 user user 783817 abr 19 15:21 'Sorocuá Acollarado (Trogon collaris).jpeg'
+-rw-r--r-- 1 user user 809902 abr 19 15:23 'Tigre Mariposa (Panthera onca).jpeg'
+
+./individuales/zoo_animages/Z3/Z3-2:
+total 2672
+-rw-r--r-- 1 user user 737981 abr 19 15:28 'Bagre de Maracaibo (Perrunichthys perruno).jpeg'
+-rw-r--r-- 1 user user 692803 abr 19 15:26 'Chavarrí (Chauna chavaria).jpeg'
+-rw-r--r-- 1 user user 569033 abr 19 15:25 'Pato Cuchara (Anas clypeata).jpeg'
+-rw-r--r-- 1 user user 727096 abr 19 15:27 'Pavón de Maracaibo (Cichla temensis).jpeg'
+
+./individuales/zoo_animages/Z3/Z3-3:
+total 2992
+-rw-r--r-- 1 user user 830915 abr 19 15:35 'Cuspa Cachicamo (Priodontes maximus).jpeg'
+-rw-r--r-- 1 user user 698431 abr 19 15:31 'Guácharo (Steatornis caripensis).jpeg'
+-rw-r--r-- 1 user user 780670 abr 19 13:23 'Mono Capuchino (Cebus olivaceus).jpeg'
+-rw-r--r-- 1 user user 746221 abr 19 15:34 'Trogón Grande (Trogon massena).jpeg'
+
+./individuales/zoo_animages/Z3/Z3-4:
+total 3216
+-rw-r--r-- 1 user user 699511 abr 20 09:03 'Botuto (Lobatus gigas).jpeg'
+-rw-r--r-- 1 user user 943437 abr 19 15:38 'Langosta Espinosa (Panulirus argus).jpeg'
+-rw-r--r-- 1 user user 784145 abr 20 09:05 'Pez Ángel Francés (Pomacanthus paru).jpeg'
+-rw-r--r-- 1 user user 859436 abr 19 15:37 'Pez Loro (Scarus guacamaia).jpeg'
+
+./individuales/zoo_animages/Z3/Z3-5:
+total 2828
+-rw-r--r-- 1 user user 854978 abr 20 09:08 'Caimán del Orinoco (Crocodylus intermedius).jpeg'
+-rw-r--r-- 1 user user 636931 abr 20 09:09 'Caribe Colorado (Pygocentrus nattereri).jpeg'
+-rw-r--r-- 1 user user 787845 abr 20 09:08 'Raya Motoro (Potamotrygon motoro).jpeg'
+-rw-r--r-- 1 user user 608238 abr 20 09:06 'Tonina (Inia geoffrensis).jpeg'
+
+./individuales/zoo_animages/Z4:
+total 0
+drwxrwxr-x 1 user user 294 abr 20 09:51 Z4-1
+drwxrwxr-x 1 user user 390 abr 20 09:51 Z4-2
+drwxrwxr-x 1 user user 332 abr 20 09:51 Z4-3
+drwxrwxr-x 1 user user 338 abr 20 09:51 Z4-4
+drwxrwxr-x 1 user user 368 abr 20 09:51 Z4-5
+
+./individuales/zoo_animages/Z4/Z4-1:
+total 2948
+-rw-r--r-- 1 user user 812721 abr 19 13:20 'Águila Crestada (Morphnus guianensis).jpeg'
+-rw-r--r-- 1 user user 661662 abr 19 13:26 'Culebra Lora (Leptophis ahaetulla).jpeg'
+-rw-r--r-- 1 user user 747421 abr 19 13:25 'Danta (Tapirus terrestris).jpeg'
+-rw-r--r-- 1 user user 790346 abr 19 15:36 'Mono Maicero (Sapajus apella).jpeg'
+
+./individuales/zoo_animages/Z4/Z4-2:
+total 2752
+-rw-r--r-- 1 user user 657047 abr 19 13:30 'Águila Real de los Andes (Geranoaetus melanoleucus).jpeg'
+-rw-r--r-- 1 user user 850820 abr 19 13:31 'Conejo de Páramo (Sylvilagus varynaensis).jpeg'
+-rw-r--r-- 1 user user 688166 abr 19 13:37 'Musaraña de los Andes (Cryptotis meridensis).jpeg'
+-rw-r--r-- 1 user user 612056 abr 19 13:29 'Pato de Torrente (Merganetta armata).jpeg'
+
+./individuales/zoo_animages/Z4/Z4-3:
+total 2744
+-rw-r--r-- 1 user user 649136 abr 19 13:52 'Galápago Llanero (Podocnemis vogli).jpeg'
+-rw-r--r-- 1 user user 773142 abr 19 13:41 'Oso Palmero (Myrmecophaga tridactyla).jpeg'
+-rw-r--r-- 1 user user 706397 abr 19 13:57 'Pavo Real o Pavón Negro (Crax alector).jpeg'
+-rw-r--r-- 1 user user 675797 abr 19 13:55 'Zorro Cangrejero (Cerdocyon thous).jpeg'
+
+./individuales/zoo_animages/Z4/Z4-4:
+total 3268
+-rw-r--r-- 1 user user 673133 abr 19 13:58 'Cardenal Guajiro (Cardinalis phoeniceus).jpeg'
+-rw-r--r-- 1 user user 878632 abr 19 14:00 'Cascabel (Crotalus durissus).jpeg'
+-rw-r--r-- 1 user user 846920 abr 19 13:59 'Conejo Sabanero (Sylvilagus floridanus).jpeg'
+-rw-r--r-- 1 user user 941950 abr 19 14:02 'Turpial Guajiro (Icterus icterus ridgwayi).jpeg'
+
+./individuales/zoo_animages/Z4/Z4-5:
+total 2628
+-rw-r--r-- 1 user user 668030 abr 19 14:06 'Halcón de Monte (Micrastur semitorquatus).jpeg'
+-rw-r--r-- 1 user user 687538 abr 19 14:07 'Oso Melero (Tamandua tetradactyla).jpeg'
+-rw-r--r-- 1 user user 658442 abr 19 14:06 'Sapito de Yapacana (Minyobates steyermarki).jpeg'
+-rw-r--r-- 1 user user 668423 abr 19 14:09 'Tucancito de Pico Maculado (Selenidera culik).jpeg'
+
+./individuales/zoo_animages/Z5:
+total 0
+drwxr-xr-x 1 user user 220 abr 23 14:21 z5-1
+drwxr-xr-x 1 user user 208 abr 23 15:12 z5-2
+drwxr-xr-x 1 user user 196 abr 23 15:17 z5-3
+drwxr-xr-x 1 user user 128 abr 23 15:16 z5-4
+drwxr-xr-x 1 user user 156 abr 23 15:13 z5-5
+
+./individuales/zoo_animages/Z5/z5-1:
+total 3028
+-rwxrwx--- 1 user user 834236 abr 23 13:52 Glyptotherium_venezuelensis.jpeg
+-rwxrwx--- 1 user user 699620 abr 23 13:53 Megatherium_americanum.jpeg
+-rwxrwx--- 1 user user 777320 abr 23 13:53 Notiomastodon_platensis.jpeg
+-rwxrwx--- 1 user user 783251 abr 23 13:53 Smilodon_populator.jpeg
+
+./individuales/zoo_animages/Z5/z5-2:
+total 2612
+-rwxrwx--- 1 user user 667178 abr 23 13:54  Lutjanus_campechanus.jpeg
+-rwxrwx--- 1 user user 687770 abr 23 13:55  Megalops_atlanticus.jpeg
+-rwxrwx--- 1 user user 571513 abr 23 13:54  Scomberomorus_cavalla.jpeg
+-rwxrwx--- 1 user user 742454 abr 23 13:55 'Semaprochilodus laticeps.jpeg'
+
+./individuales/zoo_animages/Z5/z5-3:
+total 3032
+-rwxrwx--- 1 user user 786006 abr 23 13:56 'Chelonoidis carbonarius.jpeg'
+-rwxrwx--- 1 user user 889245 abr 23 13:56 'Crotalus durissus.jpeg'
+-rwxrwx--- 1 user user 659711 abr 23 13:56 'Rhinella marina.jpeg'
+-rwxrwx--- 1 user user 757991 abr 23 13:56 'Thecadactylus rapicauda.jpeg'
+
+./individuales/zoo_animages/Z5/z5-4:
+total 2004
+-rwxrwx--- 1 user user 633615 abr 23 13:56 Atta_laevigata.jpeg
+-rwxrwx--- 1 user user 747753 abr 23 13:55 Dynastes_hercules.jpeg
+-rwxrwx--- 1 user user 664670 abr 23 13:55 Fulgora_laternaria.jpeg
+
+./individuales/zoo_animages/Z5/z5-5:
+total 3160
+-rwxrwx--- 1 user user 882456 abr 23 13:55 Ara_ararauna.jpeg
+-rwxrwx--- 1 user user 687398 abr 23 13:54 Icterus_icterus.jpeg
+-rwxrwx--- 1 user user 942851 abr 23 13:54 Procnias_albus.jpeg
+-rwxrwx--- 1 user user 715731 abr 23 13:54 Spinus_cucullatus.jpeg
+[user@archlinux loquehayquemeter]$ /home/user/Downloads/loquehayquemeter
+
+
+
+
+
+
+
+
+
+
+[user@archlinux ~]$ ls
+ animales.txt  'comando convertir'   Documentos   Escritorio   mimeapps.list   paru         Public      Videos
+ Aplicaciones   Descargas            Documents    ho.txt       Music           Pictures     Público     Videos_ES
+ assets         Desktop              Downloads    Imágenes     Música          Plantillas   Templates   zoo_tui
+[user@archlinux ~]$ cd zoo_tui
+[user@archlinux zoo_tui]$ ls -lR assets
+assets:
+total 12
+drwxr-xr-x 1 user user   0 abr 15 21:10 animales
+drwxr-xr-x 1 user user  60 abr 20 02:55 audio
+drwxr-xr-x 1 user user 354 abr 20 00:20 categorias
+drwxr-xr-x 1 user user  98 abr 20 02:56 fondos
+drwxr-xr-x 1 user user 168 abr 15 21:10 fonts
+drwxr-xr-x 1 user user  44 abr 16 15:02 guias
+-rwxr-xr-x 1 user user 527 mar 15 22:52 paleta_zoo_48.png
+-rwxr-xr-x 1 user user 399 mar 15 22:46 paleta_zoo_natural.png
+-rwxr-xr-x 1 user user 399 mar 15 20:48 paleta_zoo.png
+
+assets/animales:
+total 0
+
+assets/audio:
+total 0
+drwxr-xr-x 1 user user 176 abr 15 21:10 ambiente
+drwxr-xr-x 1 user user 274 abr 23 14:04 categorias
+drwxr-xr-x 1 user user  58 abr 15 21:10 efectos
+drwxr-xr-x 1 user user 150 abr 15 21:10 extra
+
+assets/audio/ambiente:
+total 5184
+-rwxr-xr-x 1 user user 3367029 mar  3 15:21 amb_acuario.ogg
+-rwxr-xr-x 1 user user  964095 mar  3 15:21 amb_aves.ogg
+-rwxr-xr-x 1 user user  615605 mar  6 10:16 amb_entrada.ogg
+-rwxr-xr-x 1 user user  229488 mar  3 15:21 amb_leones.ogg
+-rwxr-xr-x 1 user user   52549 mar  3 15:21 amb_primates.ogg
+-rwxr-xr-x 1 user user   62689 mar  3 15:21 amb_reptiles.ogg
+
+assets/audio/categorias:
+total 608
+-rw-r--r-- 1 user user  49182 abr 23 13:37 grito_anfibios.wav
+-rw-r--r-- 1 user user  40912 abr 23 13:37 grito_aves.wav
+-rw-r--r-- 1 user user 118156 abr 23 13:38 grito_fosiles.wav
+-rw-r--r-- 1 user user  61314 abr 23 13:37 grito_insectos.wav
+-rw-r--r-- 1 user user 124994 abr 23 13:37 grito_mamiferos.wav
+-rw-r--r-- 1 user user  29932 abr 23 13:36 grito_peces.wav
+-rw-r--r-- 1 user user  82818 abr 23 13:36 grito_primates.wav
+-rw-r--r-- 1 user user  99910 abr 23 13:38 grito_reptiles.wav
+
+assets/audio/efectos:
+total 84
+-rwxr-xr-x 1 user user 12258 mar  6 10:10 fx_boton.wav
+-rwxr-xr-x 1 user user 70814 mar  6 10:08 fx_transicion.wav
+
+assets/audio/extra:
+total 516
+-rwxr-xr-x 1 user user  21144 mar  3 15:21 Deep-lion-roar-sound-effect.ogg
+-rwxr-xr-x 1 user user 501978 mar  3 15:21 Seaside-ambiance-with-seagulls-and-boats.ogg
+
+assets/categorias:
+total 1120
+-rw-r--r-- 1 user user 130964 abr 16 15:02 anfibios_inspyrenet.png
+-rw-r--r-- 1 user user 155598 abr 16 15:02 aves_inspyrenet.png
+-rw-r--r-- 1 user user 135566 abr 16 15:02 fosiles_inspyrenet.png
+-rw-r--r-- 1 user user 177971 abr 16 15:02 insectos_inspyrenet.png
+-rw-r--r-- 1 user user 109301 abr 16 15:02 mamiferos_inspyrenet.png
+-rw-r--r-- 1 user user 122978 abr 16 15:02 peces_inspyrenet.png
+-rw-r--r-- 1 user user 125003 abr 16 15:02 primates_inspyrenet.png
+-rw-r--r-- 1 user user 172978 abr 16 15:02 reptiles_inspyrenet.png
+
+assets/fondos:
+total 3588
+drwxr-xr-x 1 user user     274 abr 20 02:56 categorias
+drwxr-xr-x 1 user user     528 abr 16 14:07 originales
+drwxr-xr-x 1 user user     656 abr 16 14:07 pixel
+-rw-r--r-- 1 user user 3671967 abr 16 14:07 spritesheet_vertical.png
+
+assets/fondos/categorias:
+total 4768
+-rw-r----- 1 user user 607332 abr 20 02:56 fondo_anfibios.gif
+-rw-r----- 1 user user 607332 abr 20 02:56 fondo_aves.gif
+-rw-r----- 1 user user 607332 abr 20 02:56 fondo_fosiles.gif
+-rw-r----- 1 user user 607332 abr 20 02:56 fondo_insectos.gif
+-rw-r----- 1 user user 607332 abr 20 02:56 fondo_mamiferos.gif
+-rw-r----- 1 user user 607332 abr 20 02:56 fondo_peces.gif
+-rw-r----- 1 user user 607332 abr 20 02:56 fondo_primates.gif
+-rw-r----- 1 user user 607332 abr 20 02:56 fondo_reptiles.gif
+
+assets/fondos/originales:
+total 29856
+-rw-r--r-- 1 user user 1110663 abr 16 14:07 e.jpeg
+-rw-r--r-- 1 user user  945078 abr 16 14:07 p1.jpeg
+-rw-r--r-- 1 user user  953248 abr 16 14:07 p2.jpeg
+-rw-r--r-- 1 user user  977064 abr 16 14:07 p3.jpeg
+-rw-r--r-- 1 user user  804100 abr 16 14:07 p4.jpeg
+-rw-r--r-- 1 user user  876721 abr 16 14:07 p5.jpeg
+-rw-r--r-- 1 user user  918228 abr 16 14:07 z1-1.jpeg
+-rw-r--r-- 1 user user 1002666 abr 16 14:07 z1-2.jpeg
+-rw-r--r-- 1 user user 1008719 abr 16 14:07 z1-3.jpeg
+-rw-r--r-- 1 user user  960320 abr 16 14:07 z1-4.jpeg
+-rw-r--r-- 1 user user  992116 abr 16 14:07 z1-5.jpeg
+-rw-r--r-- 1 user user  922828 abr 16 14:07 z2-1.jpeg
+-rw-r--r-- 1 user user  974306 abr 16 14:07 z2-2.jpeg
+-rw-r--r-- 1 user user 1019798 abr 16 14:07 z2-3.jpeg
+-rw-r--r-- 1 user user 1040342 abr 16 14:07 z2-4.jpeg
+-rw-r--r-- 1 user user 1069534 abr 16 14:07 z2-5.jpeg
+-rw-r--r-- 1 user user  949286 abr 16 14:07 z3-1.jpeg
+-rw-r--r-- 1 user user  984085 abr 16 14:07 z3-2.jpeg
+-rw-r--r-- 1 user user  970441 abr 16 14:07 z3-3.jpeg
+-rw-r--r-- 1 user user  946906 abr 16 14:07 z3-4.jpeg
+-rw-r--r-- 1 user user  954841 abr 16 14:07 z3-5.jpeg
+-rw-r--r-- 1 user user  866126 abr 16 14:07 z4-1.jpeg
+-rw-r--r-- 1 user user  985968 abr 16 14:07 z4-2.jpeg
+-rw-r--r-- 1 user user  942656 abr 16 14:07 z4-3.jpeg
+-rw-r--r-- 1 user user 1130735 abr 16 14:07 z4-4.jpeg
+-rw-r--r-- 1 user user 1078290 abr 16 14:07 z4-5.jpeg
+-rw-r--r-- 1 user user  888153 abr 16 14:07 z5-1.jpg
+-rw-r--r-- 1 user user  938810 abr 16 14:07 z5-2.jpeg
+-rw-r--r-- 1 user user 1067328 abr 16 14:07 z5-3.jpeg
+-rw-r--r-- 1 user user 1054033 abr 16 14:07 z5-4.jpeg
+-rw-r--r-- 1 user user 1168003 abr 16 14:07 z5-5.jpg
+
+assets/fondos/pixel:
+total 3660
+-rw-r--r-- 1 user user 122722 abr 16 14:07 px_e.png
+-rw-r--r-- 1 user user 119457 abr 16 14:07 px_p1.png
+-rw-r--r-- 1 user user 119801 abr 16 14:07 px_p2.png
+-rw-r--r-- 1 user user 112050 abr 16 14:07 px_p3.png
+-rw-r--r-- 1 user user 109537 abr 16 14:07 px_p4.png
+-rw-r--r-- 1 user user 120287 abr 16 14:07 px_p5.png
+-rw-r--r-- 1 user user 128530 abr 16 14:07 px_z1-1.png
+-rw-r--r-- 1 user user 127972 abr 16 14:07 px_z1-2.png
+-rw-r--r-- 1 user user 115065 abr 16 14:07 px_z1-3.png
+-rw-r--r-- 1 user user 124351 abr 16 14:07 px_z1-4.png
+-rw-r--r-- 1 user user 131526 abr 16 14:07 px_z1-5.png
+-rw-r--r-- 1 user user 109651 abr 16 14:07 px_z2-1.png
+-rw-r--r-- 1 user user 113511 abr 16 14:07 px_z2-2.png
+-rw-r--r-- 1 user user 115530 abr 16 14:07 px_z2-3.png
+-rw-r--r-- 1 user user 109335 abr 16 14:07 px_z2-4.png
+-rw-r--r-- 1 user user 142903 abr 16 14:07 px_z2-5.png
+-rw-r--r-- 1 user user 127569 abr 16 14:07 px_z3-1.png
+-rw-r--r-- 1 user user 126025 abr 16 14:07 px_z3-2.png
+-rw-r--r-- 1 user user 136388 abr 16 14:07 px_z3-3.png
+-rw-r--r-- 1 user user  94304 abr 16 14:07 px_z3-4.png
+-rw-r--r-- 1 user user 110638 abr 16 14:07 px_z3-5.png
+-rw-r--r-- 1 user user 122214 abr 16 14:07 px_z4-1.png
+-rw-r--r-- 1 user user 124823 abr 16 14:07 px_z4-2.png
+-rw-r--r-- 1 user user  99730 abr 16 14:07 px_z4-3.png
+-rw-r--r-- 1 user user 123672 abr 16 14:07 px_z4-4.png
+-rw-r--r-- 1 user user 132077 abr 16 14:07 px_z4-5.png
+-rw-r--r-- 1 user user  92924 abr 16 14:07 px_z5-1.png
+-rw-r--r-- 1 user user  96789 abr 16 14:07 px_z5-2.png
+-rw-r--r-- 1 user user 117477 abr 16 14:07 px_z5-3.png
+-rw-r--r-- 1 user user 120068 abr 16 14:07 px_z5-4.png
+-rw-r--r-- 1 user user 128546 abr 16 14:07 px_z5-5.png
+
+assets/fonts:
+total 468
+-rwxr-xr-x 1 user user 173052 may 13  2025 ari-w9500.ttf
+-rwxr-xr-x 1 user user 115416 mar 15 23:57 Ithaca-LVB75.ttf
+-rwxr-xr-x 1 user user  17272 oct  4  2018 PixelOperator.ttf
+-rwxr-xr-x 1 user user  82480 oct 30  2012 PressStart2P.ttf
+-rwxr-xr-x 1 user user  75864 mar 31  2015 VCR_OSD_MONO_1.001.ttf
+
+assets/guias:
+total 2004
+-rw-r--r-- 1 user user  994015 abr 16 15:02 guiaAni.png
+-rw-r--r-- 1 user user 1053587 abr 16 15:02 guiaEli.png
+[user@archlinux zoo_tui]$ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#!/bin/bash
+
+ORIGEN="/home/user/Descargas/listas"
+DEST_ORIGINALES="./assets/fondos/originales"
+DEST_PIXEL="./assets/fondos/pixel"
+PALETA="./assets/paleta_zoo_48.png"
+SPRITESHEET="./assets/fondos/spritesheet_vertical.png"
+
+W=640
+H=480
+
+mkdir -p "$DEST_ORIGINALES" "$DEST_PIXEL"
+
+# ── Menú de selección ─────────────────────────────────────────────────────────
+echo ""
+echo "╔══════════════════════════════════════════════╗"
+echo "║         MODO DE TRANSFORMACIÓN               ║"
+echo "╠══════════════════════════════════════════════╣"
+echo "║  B) Retro detallado  │ 640x480 crop centrado ║"
+echo "║                      │ Floyd-Steinberg        ║"
+echo "╠══════════════════════════════════════════════╣"
+echo "║  C) 90% original     │ sin tocar aspect ratio ║"
+echo "║                      │ Floyd-Steinberg        ║"
+echo "╠══════════════════════════════════════════════╣"
+echo "║  D) Trama ordenada   │ 90% sin aspect ratio   ║"
+echo "║                      │ Ordered Dither o4x4    ║"
+echo "╚══════════════════════════════════════════════╝"
+echo ""
+read -rp "  Elige una opción [B/C/D]: " OPCION
+OPCION="${OPCION^^}"  # Pasar a mayúscula
+
+if [[ "$OPCION" != "B" && "$OPCION" != "C" && "$OPCION" != "D" ]]; then
+    echo "❌ Opción no válida. Usa B, C o D."
+    exit 1
+fi
+
+echo ""
+echo "✔ Opción seleccionada: $OPCION"
+echo ""
+
+# ── Copiar imágenes ───────────────────────────────────────────────────────────
+echo "Copiando imágenes..."
+for f in "$ORIGEN"/*.jpeg "$ORIGEN"/*.jpg; do
+    if [ -f "$f" ] && [[ ! "$f" =~ "alt" ]]; then
+        cp "$f" "$DEST_ORIGINALES/"
+    fi
+done
+
+# ── Transformar ───────────────────────────────────────────────────────────────
+echo "Transformando a pixel art..."
+for img in "$DEST_ORIGINALES"/*.jpeg "$DEST_ORIGINALES"/*.jpg; do
+    if [ -f "$img" ]; then
+        nombre=$(basename "$img")
+        nombre="${nombre%.*}"
+
+        case "$OPCION" in
+
+            B)
+                # Retro detallado: 640x480 fijo, crop centrado, Floyd-Steinberg
+                magick "$img" \
+                    -resize "${W}x${H}^" -gravity Center -extent "${W}x${H}" \
+                    -filter Lanczos -resize "${W}x${H}!" \
+                    -unsharp 0x1+0.8+0.02 \
+                    -dither FloydSteinberg -remap "$PALETA" \
+                    "$DEST_PIXEL/px_${nombre}.png"
+                ;;
+
+            C)
+                # 90% del original, sin modificar aspect ratio, Floyd-Steinberg
+                magick "$img" \
+                    -filter Lanczos -resize 90% \
+                    -unsharp 0x1+0.8+0.02 \
+                    -dither FloydSteinberg -remap "$PALETA" \
+                    "$DEST_PIXEL/px_${nombre}.png"
+                ;;
+
+            D)
+                # 90% del original, sin modificar aspect ratio, ordered dither o4x4
+                magick "$img" \
+                    -filter Lanczos -resize 90% \
+                    -unsharp 0x1+0.8+0.02 \
+                    +dither -remap "$PALETA" \
+                    -ordered-dither o4x4 \
+                    "$DEST_PIXEL/px_${nombre}.png"
+                ;;
+        esac
+
+        echo "  ✓ Procesada: $nombre"
+    fi
+done
+
+# ── Verificación ──────────────────────────────────────────────────────────────
+echo ""
+echo "=== Verificación ==="
+for img in "$DEST_PIXEL"/*.png; do
+    dims=$(identify -format "%wx%h" "$img")
+    if [ "$OPCION" = "B" ]; then
+        if [ "$dims" != "${W}x${H}" ]; then
+            echo "  ⚠️  $(basename "$img"): $dims"
+        else
+            echo "  ✓ $(basename "$img"): $dims"
+        fi
+    else
+        echo "  → $(basename "$img"): $dims"
+    fi
+done
+
+# ── Spritesheet ───────────────────────────────────────────────────────────────
+echo ""
+echo "Generando spritesheet..."
+magick montage "$DEST_PIXEL"/px_*.png -tile 1x -geometry +0+0 "$SPRITESHEET"
+identify "$SPRITESHEET"
+
+echo ""
+echo "✅ Proceso completado con opción $OPCION"
