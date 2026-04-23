@@ -1,0 +1,42 @@
+{
+  "escena": "Z3_5",
+  "visitadas": [
+    "Z3_1",
+    "Z3_3",
+    "Z3_2",
+    "Z3_4",
+    "Z3_5",
+    "E",
+    "P3"
+  ],
+  "animales_vistos": [
+    "Lau-lau",
+    "Payara",
+    "Botuto",
+    "Quetzal Dorado",
+    "Barracuda",
+    "Tigre Mariposa",
+    "Paují de Copete",
+    "Caiman del Orinoco",
+    "Langosta Espinosa",
+    "Raya Motoro",
+    "Tortuga Verde",
+    "Chavarri",
+    "Pato Cuchara",
+    "Pez Loro",
+    "Pavon de Maracaibo",
+    "Armadillo Gigante",
+    "Trogon Grande",
+    "Guacharo",
+    "Mono Silvador",
+    "Caribe Colorado",
+    "Sorocua Acollarado",
+    "Pez Angel Frances",
+    "Bagre de Maracaibo"
+  ],
+  "config": {
+    "volumen_musica": 0.6,
+    "volumen_efectos": 0.8,
+    "crt": false
+  }
+}

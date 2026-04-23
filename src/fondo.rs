@@ -22,6 +22,8 @@ impl Fondos {
         );
         spritesheet.set_filter(FilterMode::Nearest);
 
+        println!("📊 Spritesheet: {}x{} px", spritesheet.width(), spritesheet.height());
+
         // Índices en orden de montaje del spritesheet (31 frames)
         let mut indices = HashMap::new();
         let escenas_ordenadas = [
@@ -36,6 +38,8 @@ impl Fondos {
         for (i, escena) in escenas_ordenadas.iter().enumerate() {
             indices.insert(*escena, i);
         }
+
+        println!("✅ {} zonas mapeadas en spritesheet", indices.len());
 
         Self {
             spritesheet,

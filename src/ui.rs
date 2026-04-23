@@ -14,6 +14,7 @@ pub struct UiRenderer {
     textura_eli: Option<Texture2D>,
     textura_ani: Option<Texture2D>,
     iconos_categoria: HashMap<String, Texture2D>,
+    fondos_categoria: HashMap<String, Texture2D>,
     grito_reproducido: Cell<bool>,
 }
 
@@ -23,6 +24,7 @@ impl UiRenderer {
         textura_eli: Option<Texture2D>,
         textura_ani: Option<Texture2D>,
         iconos_categoria: HashMap<String, Texture2D>,
+        fondos_categoria: HashMap<String, Texture2D>,
     ) -> Self {
         Self {
             font,
@@ -30,6 +32,7 @@ impl UiRenderer {
             textura_eli,
             textura_ani,
             iconos_categoria,
+            fondos_categoria,
             grito_reproducido: Cell::new(false),
         }
     }
@@ -57,264 +60,330 @@ impl UiRenderer {
     // ═════════════════════════════════════════════════════════════════
     //  PANTALLA DE INFO UNIFICADA (animales, fósiles, peces, mensajes)
     // ═════════════════════════════════════════════════════════════════
-    fn render_info_animal(
-        &self,
-        info: &AnimalInfo,
-        top: f32,
-        bottom: f32,
-        audio: &AudioManager,
-    ) {
-        let sw = screen_width();
-        draw_rectangle(0.0, top, sw, bottom - top, COLOR_BG_DARK);
+ fn render_info_animal(
+    &self,
+    info: &AnimalInfo,
+    top: f32,
+    bottom: f32,
+    audio: &AudioManager,
+) {
+    let sw = screen_width();
 
-        let available_h = bottom - top;
+    // ── LIMPIAR el área completa primero ────────────────────────────
+    draw_rectangle(0.0, top, sw, bottom - top, COLOR_BG_DARK);
 
-        // ── Área de imagen ──────────────────────────────────────────
-        let img_h = available_h * 0.22;
-        let img_w = sw * 0.5;
-        let img_x = (sw - img_w) / 2.0;
-        let img_y = top + available_h * 0.03;
-
-        draw_rectangle(img_x, img_y, img_w, img_h, COLOR_BG_ALT);
-        draw_rectangle_lines(img_x, img_y, img_w, img_h, 1.0, COLOR_BORDER);
-
-        // ✅ ÍCONO DE CATEGORÍA COMO PLACEHOLDER (debajo del nombre)
-        let mut icono_dibujado = false;
-        if !info.categoria.is_empty() {
-            let cat_key = info.categoria.to_lowercase();
-            if let Some(icono_tex) = self.iconos_categoria.get(&cat_key) {
-                let icon_scale = 0.7;
-                let scaled_w = img_w * icon_scale;
-                let scaled_h = img_h * icon_scale;
-                let icon_x = img_x + (img_w - scaled_w) / 2.0;
-                let icon_y = img_y + (img_h - scaled_h) / 2.0;
-                draw_texture_ex(
-                    icono_tex,
-                    icon_x,
-                    icon_y,
-                    WHITE,
-                    DrawTextureParams {
-                        dest_size: Some(vec2(scaled_w, scaled_h)),
-                        ..Default::default()
-                    },
-                );
-                icono_dibujado = true;
-            }
-        }
-
-        if !icono_dibujado {
-            let ph = "[ imagen ]";
-            let fs_ph = fs_pct(0.02);
-            let phw = measure_text(ph, Some(&self.font), fs_ph, 1.0).width;
-            draw_text_ex(
-                ph,
-                img_x + (img_w - phw) / 2.0,
-                img_y + img_h * 0.55,
-                TextParams {
-                    font: Some(&self.font),
-                    font_size: fs_ph,
-                    color: COLOR_DIM,
+    // ── FONDO DE CATEGORÍA ──────────────────────────────────────────
+    if !info.categoria.is_empty() {
+        let cat_key = info.categoria.to_lowercase();
+        if let Some(fondo_tex) = self.fondos_categoria.get(&cat_key) {
+            draw_texture_ex(
+                fondo_tex,
+                0.0,
+                top,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(sw, bottom - top)),
                     ..Default::default()
                 },
             );
         }
-
-        // ── Nombre común ────────────────────────────────────────────
-        let name_y = img_y + img_h + available_h * 0.04;
-        let fs_name = fs_adaptativo(&info.nombre_comun, &self.font, fs_pct(0.04), sw * 0.85);
-        let ntw = measure_text(&info.nombre_comun, Some(&self.font), fs_name, 1.0).width;
-        let th_name = text_height(&self.font, fs_name);
-        draw_text_ex(
-            &info.nombre_comun,
-            (sw - ntw) / 2.0,
-            name_y + th_name,
-            TextParams {
-                font: Some(&self.font),
-                font_size: fs_name,
-                color: COLOR_ACCENT,
-                ..Default::default()
-            },
-        );
-
-        // ── Nombre científico ───────────────────────────────────────
-        let sci_y = name_y + th_name + 6.0;
-        let fs_sci = fs_adaptativo(
-            &info.nombre_cientifico,
-            &self.font,
-            fs_pct(0.025),
-            sw * 0.8,
-        );
-        let stw = measure_text(&info.nombre_cientifico, Some(&self.font), fs_sci, 1.0).width;
-        let th_sci = text_height(&self.font, fs_sci);
-        draw_text_ex(
-            &info.nombre_cientifico,
-            (sw - stw) / 2.0,
-            sci_y + th_sci,
-            TextParams {
-                font: Some(&self.font),
-                font_size: fs_sci,
-                color: COLOR_TEXT_DIM,
-                ..Default::default()
-            },
-        );
-
-        // ── Separador ───────────────────────────────────────────────
-        let sep_y = sci_y + th_sci + 12.0;
-        draw_line(sw * 0.1, sep_y, sw * 0.9, sep_y, 1.0, COLOR_BORDER);
-
-        // ── Descripción (con scroll) ────────────────────────────────
-        let fs_desc = fs_pct(0.026);
-        let desc_text: String = info.descripcion.chars().take(info.texto_pos).collect();
-        self.render_texto_wrapped(
-            &desc_text,
-            sw * 0.08,
-            sep_y + 8.0,
-            sw * 0.84,
-            bottom - 30.0,
-            fs_desc,
-            COLOR_GREEN,
-        );
-
-        // ✅ REPRODUCIR GRITO DE CATEGORÍA (solo una vez)
-        if info.terminado && !self.grito_reproducido.get() && !info.categoria.is_empty() {
-            audio.reproducir_grito_categoria(&info.categoria);
-            self.grito_reproducido.set(true);
-        }
-
-        // ── Hint (adaptativo según contexto) ────────────────────────
-        let hint = if !info.hint_z.is_empty() {
-            if info.terminado {
-                format!("{}  X: Volver", info.hint_z)
-            } else {
-                "Z: Completar  X: Volver".to_string()
-            }
-        } else {
-            if info.terminado {
-                "X: Volver".to_string()
-            } else {
-                "Z: Completar  X: Volver".to_string()
-            }
-        };
-        self.render_hint(&hint, bottom - 8.0);
     }
 
-    // ═════════════════════════════════════════════════════════════════
-    //  DIÁLOGO (con scroll mejorado)
-    // ═════════════════════════════════════════════════════════════════
-    fn render_dialogo(&self, estado: &Estado) {
-    let sw = screen_width();
-    let sh = screen_height();
-    let sb = safe_bottom();
-    let box_h = sh * 0.25;
-    let box_y = sb - box_h - 8.0;
-    let box_x = 8.0;
-    let box_w = sw - 16.0;
+    // ── Overlay oscuro ───────────────────────────────────────────────
+    draw_rectangle(0.0, top, sw, bottom - top, Color::new(0.0, 0.0, 0.0, 0.65));
 
-    draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.5));
-    draw_rectangle(box_x, box_y, box_w, box_h, COLOR_DIALOG_BG);
-    draw_rectangle_lines(box_x, box_y, box_w, box_h, 2.0, COLOR_BORDER);
+    let available_h = bottom - top;
 
-    // ── Guía: 25% izquierda + corte mitad superior ───────────────
-    if let Some(tex) = self.get_textura_guia(estado.dialogo.personaje_actual()) {
-        let max_w = sw * 0.30;
-        let max_h = sh * 0.28;
-        let tex_aspect = tex.width() / tex.height();
-        let area_aspect = max_w / max_h;
+    // ── Área de imagen ───────────────────────────────────────────────
+    let img_h = available_h * 0.18;
+    let img_w = sw * 0.45;
+    let img_x = (sw - img_w) / 2.0;
+    let img_y = top + available_h * 0.04;
 
-        let (guia_w, guia_h) = if area_aspect > tex_aspect {
-            (max_h * tex_aspect, max_h)
-        } else {
-            (max_w, max_w / tex_aspect)
-        };
+    draw_rectangle(img_x, img_y, img_w, img_h, COLOR_BG_ALT);
+    draw_rectangle_lines(img_x, img_y, img_w, img_h, 2.0, COLOR_BORDER);
 
-        // Posición: 25% desde la izquierda, centrado en ese punto
-        let guia_cx = sw * 0.25;
-        let guia_x  = guia_cx - guia_w / 2.0;
-        let guia_y  = box_y - guia_h - 4.0;
-
-        // Corte: solo mitad superior del sprite (torso hacia arriba)
-        let src = Rect::new(
-            0.0,
-            0.0,
-            tex.width(),
-            tex.height() * 0.55, // 55% superior para incluir cabeza y torso
-        );
-
-        draw_texture_ex(
-            tex,
-            guia_x,
-            guia_y,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(vec2(guia_w, guia_h)),
-                source: Some(src),
-                ..Default::default()
-            },
-        );
-    }
-
-    let padding = 10.0;
-    let inner_w = box_w - padding * 2.0;
-
-    // Nombre del personaje
-    let personaje = estado.dialogo.personaje_actual();
-    let fs_p = fs_adaptativo(personaje, &self.font, fs_pct(0.028), inner_w);
-    let th_p = text_height(&self.font, fs_p);
+    let ph = "[ Imagen ]";
+    let fs_ph = fs_pct(0.02);
+    let phw = measure_text(ph, Some(&self.font), fs_ph, 1.0).width;
     draw_text_ex(
-        personaje,
-        box_x + padding,
-        box_y + padding + th_p,
+        ph,
+        img_x + (img_w - phw) / 2.0,
+        img_y + img_h * 0.55,
         TextParams {
             font: Some(&self.font),
-            font_size: fs_p,
+            font_size: fs_ph,
+            color: COLOR_DIM,
+            ..Default::default()
+        },
+    );
+
+    // ── Nombre común ─────────────────────────────────────────────────
+    let name_y = img_y + img_h + available_h * 0.04;
+    let fs_name = fs_adaptativo(&info.nombre_comun, &self.font, fs_pct(0.045), sw * 0.85);
+    let ntw = measure_text(&info.nombre_comun, Some(&self.font), fs_name, 1.0).width;
+    let th_name = text_height(&self.font, fs_name);
+    draw_text_ex(
+        &info.nombre_comun,
+        (sw - ntw) / 2.0,
+        name_y + th_name,
+        TextParams {
+            font: Some(&self.font),
+            font_size: fs_name,
             color: COLOR_ACCENT,
             ..Default::default()
         },
     );
 
-    // Texto del diálogo con scroll automático
-    let texto = estado.dialogo.texto_visible();
-    let fs_d = fs_pct(0.024);
-    let text_top    = box_y + padding + th_p + 6.0;
-    let text_bottom = box_y + box_h - padding - 15.0;
-    let lines   = self.word_wrap(&texto, fs_d, inner_w);
-    let line_h  = text_height(&self.font, fs_d) * 1.2;
-    let max_vis = ((text_bottom - text_top) / line_h) as usize;
+    // ── Nombre científico ────────────────────────────────────────────
+    let sci_y = name_y + th_name + 4.0;
+    let fs_sci = fs_adaptativo(
+        &info.nombre_cientifico,
+        &self.font,
+        fs_pct(0.025),
+        sw * 0.8,
+    );
+    let stw = measure_text(&info.nombre_cientifico, Some(&self.font), fs_sci, 1.0).width;
+    let th_sci = text_height(&self.font, fs_sci);
+    draw_text_ex(
+        &info.nombre_cientifico,
+        (sw - stw) / 2.0,
+        sci_y + th_sci,
+        TextParams {
+            font: Some(&self.font),
+            font_size: fs_sci,
+            color: COLOR_TEXT_DIM,
+            ..Default::default()
+        },
+    );
 
-    let start = if lines.len() > max_vis { lines.len() - max_vis } else { 0 };
+    // ── Separador (ahora va justo después del nombre científico) ─────
+    let sep_y = sci_y + th_sci + 12.0;
+    draw_line(sw * 0.1, sep_y, sw * 0.9, sep_y, 1.0, COLOR_BORDER);
 
-    let mut cy = text_top;
-    for line in lines.iter().skip(start) {
-        if cy + line_h > text_bottom { break; }
-        cy += line_h;
-        draw_text_ex(
-            line,
-            box_x + padding,
-            cy,
-            TextParams {
-                font: Some(&self.font),
-                font_size: fs_d,
-                color: COLOR_TEXT,
-                ..Default::default()
-            },
-        );
+    // ── Calcular reserva inferior para ícono + etiqueta + hint ───────
+    // hint ocupa ~30px, etiqueta ~fs_cat px, ícono scaled_h px, gaps
+    let fs_cat = fs_pct(0.018);
+    let th_cat = text_height(&self.font, fs_cat);
+    let hint_reserve = 38.0; // espacio del hint desde bottom
+    let gap_hint = 8.0;      // separación entre etiqueta y hint
+
+    // Calculamos el tamaño del ícono (si existe) para reservar espacio
+    let icono_reserve = if !info.categoria.is_empty() {
+        let cat_key = info.categoria.to_lowercase();
+        if let Some(icono_tex) = self.iconos_categoria.get(&cat_key) {
+            let icon_scale = 0.5;
+            icono_tex.height() * icon_scale + th_cat + gap_hint + 6.0
+        } else {
+            0.0
+        }
+    } else {
+        0.0
+    };
+
+    let desc_bottom = bottom - hint_reserve - icono_reserve;
+
+    // ── Descripción (con typewriter) ──────────────────────────────────
+    let fs_desc = fs_pct(0.026);
+    let desc_text: String = info.descripcion.chars().take(info.texto_pos).collect();
+    self.render_texto_wrapped(
+        &desc_text,
+        sw * 0.08,
+        sep_y + 12.0,
+        sw * 0.84,
+        desc_bottom,
+        fs_desc,
+        COLOR_INFO_TEXT,
+    );
+
+    // ── ÍCONO DE CATEGORÍA (anclado desde abajo, encima del hint) ────
+    if !info.categoria.is_empty() {
+        let cat_key = info.categoria.to_lowercase();
+
+        // Posición base: justo encima del hint
+        // etiqueta va justo encima del hint_reserve
+        let label_y = bottom - hint_reserve - gap_hint;
+
+        if let Some(icono_tex) = self.iconos_categoria.get(&cat_key) {
+            let icon_scale = 0.5;
+            let scaled_w = icono_tex.width() * icon_scale;
+            let scaled_h = icono_tex.height() * icon_scale;
+
+            // El ícono va encima de la etiqueta
+            let icon_y = label_y - scaled_h - 4.0;
+            let icon_x = (sw - scaled_w) / 2.0;
+
+            draw_texture_ex(
+                icono_tex,
+                icon_x,
+                icon_y,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(scaled_w, scaled_h)),
+                    ..Default::default()
+                },
+            );
+
+            // Etiqueta debajo del ícono
+            let cat_label = info.categoria.to_uppercase();
+            let clw = measure_text(&cat_label, Some(&self.font), fs_cat, 1.0).width;
+            draw_text_ex(
+                &cat_label,
+                (sw - clw) / 2.0,
+                label_y,
+                TextParams {
+                    font: Some(&self.font),
+                    font_size: fs_cat,
+                    color: COLOR_HIGHLIGHT,
+                    ..Default::default()
+                },
+            );
+        } else {
+            // Sin ícono: solo la etiqueta
+            let cat_label = info.categoria.to_uppercase();
+            let clw = measure_text(&cat_label, Some(&self.font), fs_cat, 1.0).width;
+            draw_text_ex(
+                &cat_label,
+                (sw - clw) / 2.0,
+                label_y,
+                TextParams {
+                    font: Some(&self.font),
+                    font_size: fs_cat,
+                    color: COLOR_HIGHLIGHT,
+                    ..Default::default()
+                },
+            );
+        }
     }
 
-    // Indicador de continuar
-    if estado.dialogo.terminado_linea {
+    // ── Hint ─────────────────────────────────────────────────────────
+    let hint = if !info.hint_z.is_empty() {
+        if info.terminado {
+            format!("{}  X: Volver", info.hint_z)
+        } else {
+            "Z: Completar  X: Volver".to_string()
+        }
+    } else {
+        if info.terminado {
+            "X: Volver".to_string()
+        } else {
+            "Z: Completar  X: Volver".to_string()
+        }
+    };
+    self.render_hint(&hint, bottom - 10.0);
+}
+
+    // ═════════════════════════════════════════════════════════════════
+    //  DIÁLOGO
+    // ═════════════════════════════════════════════════════════════════
+    fn render_dialogo(&self, estado: &Estado) {
+        let sw = screen_width();
+        let sh = screen_height();
+        let sb = safe_bottom();
+        let box_h = sh * 0.25;
+        let box_y = sb - box_h - 8.0;
+        let box_x = 8.0;
+        let box_w = sw - 16.0;
+
+        draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.5));
+        draw_rectangle(box_x, box_y, box_w, box_h, COLOR_DIALOG_BG);
+        draw_rectangle_lines(box_x, box_y, box_w, box_h, 2.0, COLOR_BORDER);
+
+        if let Some(tex) = self.get_textura_guia(estado.dialogo.personaje_actual()) {
+            let max_w = sw * 0.60;
+            let max_h = sh * 0.45;
+            let tex_aspect = tex.width() / tex.height();
+            let area_aspect = max_w / max_h;
+
+            let (guia_w, guia_h) = if area_aspect > tex_aspect {
+                (max_h * tex_aspect, max_h)
+            } else {
+                (max_w, max_w / tex_aspect)
+            };
+
+            let guia_cx = sw * 0.25;
+            let guia_x  = guia_cx - guia_w / 2.0;
+            let guia_y  = box_y - guia_h - 4.0;
+
+            let src = Rect::new(
+                0.0,
+                0.0,
+                tex.width(),
+                tex.height() * 0.55,
+            );
+
+            draw_texture_ex(
+                tex,
+                guia_x,
+                guia_y,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(guia_w, guia_h)),
+                    source: Some(src),
+                    ..Default::default()
+                },
+            );
+        }
+
+        let padding = 10.0;
+        let inner_w = box_w - padding * 2.0;
+
+        let personaje = estado.dialogo.personaje_actual();
+        let fs_p = fs_adaptativo(personaje, &self.font, fs_pct(0.028), inner_w);
+        let th_p = text_height(&self.font, fs_p);
         draw_text_ex(
-            "▼",
-            box_x + box_w - 20.0,
-            box_y + box_h - 8.0,
+            personaje,
+            box_x + padding,
+            box_y + padding + th_p,
             TextParams {
                 font: Some(&self.font),
-                font_size: fs_pct(0.02),
+                font_size: fs_p,
                 color: COLOR_ACCENT,
                 ..Default::default()
             },
         );
+
+        let texto = estado.dialogo.texto_visible();
+        let fs_d = fs_pct(0.024);
+        let text_top    = box_y + padding + th_p + 6.0;
+        let text_bottom = box_y + box_h - padding - 15.0;
+        let lines   = self.word_wrap(&texto, fs_d, inner_w);
+        let line_h  = text_height(&self.font, fs_d) * 1.2;
+        let max_vis = ((text_bottom - text_top) / line_h) as usize;
+
+        let start = if lines.len() > max_vis { lines.len() - max_vis } else { 0 };
+
+        let mut cy = text_top;
+        for line in lines.iter().skip(start) {
+            if cy + line_h > text_bottom { break; }
+            cy += line_h;
+            draw_text_ex(
+                line,
+                box_x + padding,
+                cy,
+                TextParams {
+                    font: Some(&self.font),
+                    font_size: fs_d,
+                    color: COLOR_TEXT,
+                    ..Default::default()
+                },
+            );
+        }
+
+        if estado.dialogo.terminado_linea {
+            draw_text_ex(
+                "▼",
+                box_x + box_w - 20.0,
+                box_y + box_h - 8.0,
+                TextParams {
+                    font: Some(&self.font),
+                    font_size: fs_pct(0.02),
+                    color: COLOR_ACCENT,
+                    ..Default::default()
+                },
+            );
+        }
     }
-}
 
     // ═════════════════════════════════════════════════════════════════
     //  HELPERS UI
@@ -343,7 +412,8 @@ impl UiRenderer {
         let bg_h = th + pad_y * 2.0;
         let bg_x = (sw - bg_w) / 2.0;
         let bg_y = text_y - th - pad_y;
-        draw_rectangle(bg_x, bg_y, bg_w, bg_h, Color::new(0.15, 0.15, 0.15, 0.6));
+        draw_rectangle(bg_x, bg_y, bg_w, bg_h, Color::new(0.15, 0.15, 0.15, 0.7));
+        draw_rectangle_lines(bg_x, bg_y, bg_w, bg_h, 1.0, COLOR_BORDER);
         draw_text_ex(
             &texto,
             (sw - tw) / 2.0,
@@ -682,7 +752,6 @@ impl UiRenderer {
         let ox = (sw - mapa_w) / 2.0;
         let oy = mapa_top;
 
-        // Dibujar conexiones
         for escena in Escena::TODAS {
             let (c, r) = escena.pos_mapa();
             let r_invertido = (MAPA_ROWS - 1) - r;
@@ -704,7 +773,6 @@ impl UiRenderer {
             }
         }
 
-        // Dibujar nodos
         let fs_n = (cell * 0.22).max(8.0) as u16;
         for escena in Escena::TODAS {
             let (c, r) = escena.pos_mapa();
@@ -774,7 +842,6 @@ impl UiRenderer {
         let sh = screen_height();
         let st = safe_top();
 
-        // Si hay info abierta, mostrarla
         if let Some(ref info) = estado.libreta_info {
             self.grito_reproducido.set(false);
             self.render_info_animal(info, st, sh, &crate::audio::AudioManager::new());
@@ -897,7 +964,6 @@ impl UiRenderer {
         let sb = safe_bottom();
         let content_top = st + bar_h;
 
-        // ── Info overlay tiene prioridad máxima ─────────────────────
         if let Some(ref info) = estado.info_overlay {
             clear_background(COLOR_BG_DARK);
             self.render_barra_superior(estado, sw, bar_h, st);
@@ -906,12 +972,10 @@ impl UiRenderer {
             return;
         }
 
-        // ── Fondo con tinte de día/noche ────────────────────────────
         let tinte = estado.ciclo.tinte();
         fondos.draw(&estado.escena, tinte, content_top, sh);
         self.render_barra_superior(estado, sw, bar_h, st);
 
-        // ── Contenido según modo ─────────────────────────────────────
         match &estado.modo {
             ModoVista::Normal => self.render_normal(estado, content_top, sb),
             ModoVista::Seleccion { animales, indice } => {
@@ -973,7 +1037,6 @@ impl UiRenderer {
             }
         }
 
-        // ── Minijuegos (solo UI de control) ──────────────────────────
         if estado.pesca.activo {
             self.render_pesca(estado, content_top, sh);
         }
@@ -981,24 +1044,20 @@ impl UiRenderer {
             self.render_museo(estado, content_top, sh);
         }
 
-        // ── Diálogo con máxima prioridad ─────────────────────────────
         if estado.dialogo.activo {
             self.render_dialogo(estado);
         }
 
-        // ── Overlay de noche ─────────────────────────────────────────
         let alpha = estado.ciclo.overlay_alpha();
         if alpha > 0.0 {
             draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.15, alpha));
         }
 
-        // ── Transición ───────────────────────────────────────────────
         if estado.en_transicion() {
             let a = estado.alpha_transicion();
             draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, a));
         }
 
-        // ── Minimapa ─────────────────────────────────────────────────
         if !estado.en_pantalla_info() {
             self.render_minimapa(estado, sb);
         }
@@ -1034,7 +1093,6 @@ impl UiRenderer {
         );
     }
 
-    // ✅ HINTS ESPECÍFICOS POR ZONA
     fn render_normal(&self, estado: &Estado, content_top: f32, content_bottom: f32) {
         let sw = screen_width();
         let mid_y = (content_top + content_bottom) / 2.0;
@@ -1044,7 +1102,6 @@ impl UiRenderer {
         let bounce_px = (3.0 * scale()).min(5.0);
         let margin = arrow_size * 2.5;
 
-        // Flechas de navegación
         if conns[0].is_some() {
             let cy = content_top + margin - bounce_px * bounce_frame;
             self.draw_arrow_triangle(sw / 2.0, cy, 0, arrow_size);
@@ -1062,9 +1119,8 @@ impl UiRenderer {
             self.draw_arrow_triangle(cx, mid_y, 3, arrow_size);
         }
 
-        // ✅ HINT ESPECÍFICO POR ZONA (ahora P5 muestra correctamente)
         if estado.escena.sin_exploracion() && !estado.escena.es_pesca() && !estado.escena.es_museo() {
-            return; // No mostrar hint en E, P1-P4 (excepto P5)
+            return;
         }
 
         let hint = if estado.escena.es_pesca() {
@@ -1187,9 +1243,6 @@ impl UiRenderer {
         self.render_hint("Z: Fotografiar  X: Salir", content_bottom - 8.0);
     }
 
-    // ═════════════════════════════════════════════════════════════════
-    //  RENDER PESCA
-    // ═════════════════════════════════════════════════════════════════
     fn render_pesca(&self, estado: &Estado, content_top: f32, content_bottom: f32) {
         use crate::minijuego::FasePesca;
         let sw = screen_width();
@@ -1301,11 +1354,8 @@ impl UiRenderer {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════
-    //  RENDER MUSEO
-    // ═════════════════════════════════════════════════════════════════
     fn render_museo(&self, estado: &Estado, content_top: f32, content_bottom: f32) {
-        use crate::minijuego::{FaseMuseo, CeldaExcavacion};
+        use crate::minijuego::FaseMuseo;
         let sw = screen_width();
         let museo = &estado.museo;
         draw_rectangle(0.0, content_top, sw, content_bottom - content_top, COLOR_BG_DARK);
@@ -1338,7 +1388,6 @@ impl UiRenderer {
                 let cursor_w = measure_text("> ", Some(&self.font), fs_item, 1.0).width;
                 let text_x = 20.0 + cursor_w;
 
-                // Exhibiciones
                 for (i, dino) in museo.exhibiciones.iter().enumerate() {
                     let sel = i == museo.indice;
                     let color = if sel { COLOR_ACCENT } else { COLOR_TEXT };
@@ -1369,7 +1418,6 @@ impl UiRenderer {
                     );
                 }
 
-                // Excavar
                 let exc_idx = museo.exhibiciones.len();
                 let sel_e = museo.indice == exc_idx;
                 let y_exc = y_start + exc_idx as f32 * item_h + th;
@@ -1399,7 +1447,6 @@ impl UiRenderer {
                     },
                 );
 
-                // Quiz
                 let quiz_idx = exc_idx + 1;
                 let sel_q = museo.indice == quiz_idx;
                 let y_quiz = y_start + quiz_idx as f32 * item_h + th;
@@ -1485,9 +1532,6 @@ impl UiRenderer {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════
-    //  ✅ RENDER EXCAVACION (CORREGIDO)
-    // ═════════════════════════════════════════════════════════════════
     fn render_excavacion(
         &self,
         museo: &crate::minijuego::MinijuegoMuseo,
@@ -1585,9 +1629,6 @@ impl UiRenderer {
         self.render_hint("Flechas: mover  Z: golpear  X: salir", content_bottom - 8.0);
     }
 
-    // ═════════════════════════════════════════════════════════════════
-    //  RENDER QUIZ
-    // ═════════════════════════════════════════════════════════════════
     fn render_quiz(
         &self,
         museo: &crate::minijuego::MinijuegoMuseo,
@@ -1691,9 +1732,6 @@ impl UiRenderer {
         self.render_hint(hint, content_bottom - 8.0);
     }
 
-    // ═════════════════════════════════════════════════════════════════
-    //  RENDER MINIMAPA
-    // ═════════════════════════════════════════════════════════════════
     fn render_minimapa(&self, estado: &Estado, content_bottom: f32) {
         let cell = mini_size();
         let gap = mini_gap();
@@ -1708,7 +1746,6 @@ impl UiRenderer {
         let centro_c = centro_c as i32;
         let centro_r = centro_r as i32;
 
-        // Conexiones
         for escena in Escena::TODAS {
             let (c, r) = escena.pos_mapa();
             let dc = c as i32 - centro_c;
@@ -1740,7 +1777,6 @@ impl UiRenderer {
             }
         }
 
-        // Nodos
         for escena in Escena::TODAS {
             let (c, r) = escena.pos_mapa();
             let dc = c as i32 - centro_c;
@@ -1773,7 +1809,7 @@ impl UiRenderer {
 }
 
 // ═════════════════════════════════════════════════════════════════
-//  FUNCIONES LIBRES (fuera del impl)
+//  FUNCIONES LIBRES
 // ═════════════════════════════════════════════════════════════════
 
 pub fn render_pc_overlay(estado: &Estado, font: &Font) {
