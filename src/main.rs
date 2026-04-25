@@ -57,7 +57,6 @@ async fn main() {
 
     // ═══════════════════════════════════════════════════════════════
     //  ✅ ÍCONOS DE CATEGORÍA (pequeños, para pantalla de info)
-    //  Ubicación: assets/categorias/*_inspyrenet.png
     // ═══════════════════════════════════════════════════════════════
     let mut iconos_categoria: HashMap<String, Texture2D> = HashMap::new();
 
@@ -121,7 +120,6 @@ async fn main() {
 
     // ═══════════════════════════════════════════════════════════════
     //  ✅ FONDOS DE CATEGORÍA (para pantalla de info, oscurecidos)
-    //  Ubicación: assets/fondos/categorias_pixel/*_pixel.png
     // ═══════════════════════════════════════════════════════════════
     let mut fondos_categoria: HashMap<String, Texture2D> = HashMap::new();
 
@@ -200,6 +198,125 @@ async fn main() {
     println!("✅ {} fondos de categoría cargados", fondos_categoria.len());
 
     // ═══════════════════════════════════════════════════════════════
+    //  ✅ TEXTURAS DE ANIMALES (imágenes pixel art)
+    //  Clave: nombre_cientifico en minúsculas
+    // ═══════════════════════════════════════════════════════════════
+    let mut texturas_animales: HashMap<String, Texture2D> = HashMap::new();
+
+    macro_rules! cargar_animal {
+        ($map:expr, $path:expr, $clave:expr) => {{
+            let bytes = include_bytes!(concat!("../assets/animales_pixel/", $path));
+            let tex = Texture2D::from_file_with_format(&bytes[..], Some(ImageFormat::Png));
+            tex.set_filter(FilterMode::Nearest);
+            $map.insert($clave.to_string(), tex);
+        }};
+    }
+
+    // ── Z1 ──────────────────────────────────────────────────────────
+    cargar_animal!(texturas_animales, "Z1/Z1-1_babilla_caiman_crocodilus.png", "caiman crocodilus");
+    cargar_animal!(texturas_animales, "Z1/Z1-1_chigüire_hydrochoerus_hydrochaeris.png", "hydrochoerus hydrochaeris");
+    cargar_animal!(texturas_animales, "Z1/Z1-1_cunaguaro_leopardus_pardalis.png", "leopardus pardalis");
+    cargar_animal!(texturas_animales, "Z1/Z1-1_garza_real_ardea_alba.png", "ardea alba");
+    cargar_animal!(texturas_animales, "Z1/Z1-2_coondor_de_los_andes_vultur_gryphus.png", "vultur gryphus");
+    cargar_animal!(texturas_animales, "Z1/Z1-2_oso_frontino_tremarctos_ornatus.png", "tremarctos ornatus");
+    cargar_animal!(texturas_animales, "Z1/Z1-2_paujii_de_copete_de_piedra_pauxi_pauxi.png", "pauxi pauxi");
+    cargar_animal!(texturas_animales, "Z1/Z1-2_venado_caramerudo_odocoileus_virginianus.png", "odocoileus virginianus");
+    cargar_animal!(texturas_animales, "Z1/Z1-3_anaconda_verde_eunectes_murinus.png", "eunectes murinus");
+    cargar_animal!(texturas_animales, "Z1/Z1-3_guacamaya_bandera_ara_macao.png", "ara macao");
+    cargar_animal!(texturas_animales, "Z1/Z1-3_jaguar_panthera_onca.png", "panthera onca");
+    cargar_animal!(texturas_animales, "Z1/Z1-3_mono_araguato_alouatta_seniculus.png", "alouatta seniculus");
+    cargar_animal!(texturas_animales, "Z1/Z1-5_marimonda_de_la_sierra_ateles_hybridus.png", "ateles hybridus");
+    cargar_animal!(texturas_animales, "Z1/Z1-5_pava_negra_aburria_aburri.png", "aburria aburri");
+    cargar_animal!(texturas_animales, "Z1/Z1-5_puma_puma_concolor.png", "puma concolor");
+    cargar_animal!(texturas_animales, "Z1/Z1-5_tucaan_real_ramphastos_sulfuratus.png", "ramphastos sulfuratus");
+
+    // ── Z2 ──────────────────────────────────────────────────────────
+    cargar_animal!(texturas_animales, "Z2/Z2-1_aangaro_psittacara_wagleri.png", "psittacara wagleri");
+    cargar_animal!(texturas_animales, "Z2/Z2-1_cotorra_margaritenna_amazona_barbadensis.png", "amazona barbadensis");
+    cargar_animal!(texturas_animales, "Z2/Z2-1_cunaguaro_de_margarita_leopardus_pardalis_pardalis.png", "leopardus pardalis pardalis");
+    cargar_animal!(texturas_animales, "Z2/Z2-1_venado_de_margarita_odocoileus_virginianus_margari.png", "odocoileus virginianus margaritae");
+    cargar_animal!(texturas_animales, "Z2/Z2-2_caimaan_de_la_costa_crocodylus_acutus.png", "crocodylus acutus");
+    cargar_animal!(texturas_animales, "Z2/Z2-2_corocoro_rojo_eudocimus_ruber.png", "eudocimus ruber");
+    cargar_animal!(texturas_animales, "Z2/Z2-2_flamenco_del_caribe_phoenicopterus_ruber.png", "phoenicopterus ruber");
+    cargar_animal!(texturas_animales, "Z2/Z2-2_tortuga_carey_eretmochelys_imbricata.png", "eretmochelys imbricata");
+    cargar_animal!(texturas_animales, "Z2/Z2-3_garzoon_soldado_jabiru_mycteria.png", "jabiru mycteria");
+    cargar_animal!(texturas_animales, "Z2/Z2-3_manatii_del_caribe_trichechus_manatus.png", "trichechus manatus");
+    cargar_animal!(texturas_animales, "Z2/Z2-3_mono_capuchino_del_orinoco_cebus_albifrons.png", "cebus albifrons");
+    cargar_animal!(texturas_animales, "Z2/Z2-3_perro_de_agua_pteronura_brasiliensis.png", "pteronura brasiliensis");
+    cargar_animal!(texturas_animales, "Z2/Z2-4_harpiia_harpia_harpyja.png", "harpia harpyja");
+    cargar_animal!(texturas_animales, "Z2/Z2-4_oso_hormiguero_gigante_myrmecophaga_tridactyla.png", "myrmecophaga tridactyla");
+    cargar_animal!(texturas_animales, "Z2/Z2-4_sapito_minero_dendrobates_leucomelas.png", "dendrobates leucomelas");
+    cargar_animal!(texturas_animales, "Z2/Z2-4_tepuihyla_tepuihyla_rodriguezi.png", "tepuihyla rodriguezi");
+    cargar_animal!(texturas_animales, "Z2/Z2-5_gallo_de_roca_guayanees_rupicola_rupicola.png", "rupicola rupicola");
+    cargar_animal!(texturas_animales, "Z2/Z2-5_mono_viuda_cheracebus_lugens.png", "cheracebus lugens");
+    cargar_animal!(texturas_animales, "Z2/Z2-5_saltariin_de_cabeza_dorada_ceratopipra_erythroceph.png", "ceratopipra erythrocephala");
+    cargar_animal!(texturas_animales, "Z2/Z2-5_uacarii_de_cabeza_negra_cacajao_melanocephalus.png", "cacajao melanocephalus");
+
+    // ── Z3 ──────────────────────────────────────────────────────────
+    cargar_animal!(texturas_animales, "Z3/Z3-1_quetzal_dorado_pharomachrus_fulgidus.png", "pharomachrus fulgidus");
+    cargar_animal!(texturas_animales, "Z3/Z3-1_sorocuaa_acollarado_trogon_collaris.png", "trogon collaris");
+    cargar_animal!(texturas_animales, "Z3/Z3-2_bagre_de_maracaibo_perrunichthys_perruno.png", "perrunichthys perruno");
+    cargar_animal!(texturas_animales, "Z3/Z3-2_chavarrii_chauna_chavaria.png", "chauna chavaria");
+    cargar_animal!(texturas_animales, "Z3/Z3-2_pato_cuchara_anas_clypeata.png", "anas clypeata");
+    cargar_animal!(texturas_animales, "Z3/Z3-2_pavoon_de_maracaibo_cichla_temensis.png", "cichla temensis");
+    cargar_animal!(texturas_animales, "Z3/Z3-3_cuspa_cachicamo_priodontes_maximus.png", "priodontes maximus");
+    cargar_animal!(texturas_animales, "Z3/Z3-3_guaacharo_steatornis_caripensis.png", "steatornis caripensis");
+    cargar_animal!(texturas_animales, "Z3/Z3-3_mono_capuchino_cebus_olivaceus.png", "cebus olivaceus");
+    cargar_animal!(texturas_animales, "Z3/Z3-3_trogoon_grande_trogon_massena.png", "trogon massena");
+    cargar_animal!(texturas_animales, "Z3/Z3-4_botuto_lobatus_gigas.png", "lobatus gigas");
+    cargar_animal!(texturas_animales, "Z3/Z3-4_langosta_espinosa_panulirus_argus.png", "panulirus argus");
+    cargar_animal!(texturas_animales, "Z3/Z3-4_pez_loro_scarus_guacamaia.png", "scarus guacamaia");
+    cargar_animal!(texturas_animales, "Z3/Z3-4_pez_ngel_francees_pomacanthus_paru.png", "pomacanthus paru");
+    cargar_animal!(texturas_animales, "Z3/Z3-5_caimaan_del_orinoco_crocodylus_intermedius.png", "crocodylus intermedius");
+    cargar_animal!(texturas_animales, "Z3/Z3-5_caribe_colorado_pygocentrus_nattereri.png", "pygocentrus nattereri");
+    cargar_animal!(texturas_animales, "Z3/Z3-5_raya_motoro_potamotrygon_motoro.png", "potamotrygon motoro");
+    cargar_animal!(texturas_animales, "Z3/Z3-5_tonina_inia_geoffrensis.png", "inia geoffrensis");
+
+    // ── Z4 ──────────────────────────────────────────────────────────
+    cargar_animal!(texturas_animales, "Z4/Z4-1_culebra_lora_leptophis_ahaetulla.png", "leptophis ahaetulla");
+    cargar_animal!(texturas_animales, "Z4/Z4-1_danta_tapirus_terrestris.png", "tapirus terrestris");
+    cargar_animal!(texturas_animales, "Z4/Z4-1_guila_crestada_morphnus_guianensis.png", "morphnus guianensis");
+    cargar_animal!(texturas_animales, "Z4/Z4-1_mono_maicero_sapajus_apella.png", "sapajus apella");
+    cargar_animal!(texturas_animales, "Z4/Z4-2_conejo_de_paaramo_sylvilagus_varynaensis.png", "sylvilagus varynaensis");
+    cargar_animal!(texturas_animales, "Z4/Z4-2_guila_real_de_los_andes_geranoaetus_melanoleucus.png", "geranoaetus melanoleucus");
+    cargar_animal!(texturas_animales, "Z4/Z4-2_musaranna_de_los_andes_cryptotis_meridensis.png", "cryptotis meridensis");
+    cargar_animal!(texturas_animales, "Z4/Z4-2_pato_de_torrente_merganetta_armata.png", "merganetta armata");
+    cargar_animal!(texturas_animales, "Z4/Z4-3_galaapago_llanero_podocnemis_vogli.png", "podocnemis vogli");
+    cargar_animal!(texturas_animales, "Z4/Z4-3_zorro_cangrejero_cerdocyon_thous.png", "cerdocyon thous");
+    cargar_animal!(texturas_animales, "Z4/Z4-3_pavo_real_o_pavoon_negro_crax_alector.png", "crax alector");
+    cargar_animal!(texturas_animales, "Z4/Z4-4_cardenal_guajiro_cardinalis_phoeniceus.png", "cardinalis phoeniceus");
+    cargar_animal!(texturas_animales, "Z4/Z4-4_cascabel_crotalus_durissus.png", "crotalus durissus");
+    cargar_animal!(texturas_animales, "Z4/Z4-4_conejo_sabanero_sylvilagus_floridanus.png", "sylvilagus floridanus");
+    cargar_animal!(texturas_animales, "Z4/Z4-4_turpial_guajiro_icterus_icterus_ridgwayi.png", "icterus icterus ridgwayi");
+    cargar_animal!(texturas_animales, "Z4/Z4-5_halcoon_de_monte_micrastur_semitorquatus.png", "micrastur semitorquatus");
+    cargar_animal!(texturas_animales, "Z4/Z4-5_oso_melero_tamandua_tetradactyla.png", "tamandua tetradactyla");
+    cargar_animal!(texturas_animales, "Z4/Z4-5_sapito_de_yapacana_minyobates_steyermarki.png", "minyobates steyermarki");
+    cargar_animal!(texturas_animales, "Z4/Z4-5_tucancito_de_pico_maculado_selenidera_culik.png", "selenidera culik");
+
+    // ── Z5 ──────────────────────────────────────────────────────────
+    cargar_animal!(texturas_animales, "Z5/z5-1_glyptotherium_venezuelensis.png", "glyptotherium venezuelensis");
+    cargar_animal!(texturas_animales, "Z5/z5-1_megatherium_americanum.png", "megatherium americanum");
+    cargar_animal!(texturas_animales, "Z5/z5-1_notiomastodon_platensis.png", "notiomastodon platensis");
+    cargar_animal!(texturas_animales, "Z5/z5-1_smilodon_populator.png", "smilodon populator");
+    cargar_animal!(texturas_animales, "Z5/z5-2_lutjanus_campechanus.png", "lutjanus campechanus");
+    cargar_animal!(texturas_animales, "Z5/z5-2_megalops_atlanticus.png", "megalops atlanticus");
+    cargar_animal!(texturas_animales, "Z5/z5-2_scomberomorus_cavalla.png", "scomberomorus cavalla");
+    cargar_animal!(texturas_animales, "Z5/z5-2_semaprochilodus_laticeps.png", "semaprochilodus laticeps");
+    cargar_animal!(texturas_animales, "Z5/z5-3_chelonoidis_carbonarius.png", "chelonoidis carbonarius");
+    cargar_animal!(texturas_animales, "Z5/z5-3_crotalus_durissus.png", "crotalus durissus cumanensis");
+    cargar_animal!(texturas_animales, "Z5/z5-3_rhinella_marina.png", "rhinella marina");
+    cargar_animal!(texturas_animales, "Z5/z5-3_thecadactylus_rapicauda.png", "thecadactylus rapicauda");
+    cargar_animal!(texturas_animales, "Z5/z5-4_atta_laevigata.png", "atta laevigata");
+    cargar_animal!(texturas_animales, "Z5/z5-4_dynastes_hercules.png", "dynastes hercules");
+    cargar_animal!(texturas_animales, "Z5/z5-4_fulgora_laternaria.png", "fulgora laternaria");
+    cargar_animal!(texturas_animales, "Z5/z5-5_ara_ararauna.png", "ara ararauna");
+    cargar_animal!(texturas_animales, "Z5/z5-5_icterus_icterus.png", "icterus icterus");
+    cargar_animal!(texturas_animales, "Z5/z5-5_procnias_albus.png", "procnias albus");
+    cargar_animal!(texturas_animales, "Z5/z5-5_spinus_cucullatus.png", "spinus cucullatus");
+
+    println!("✅ {} texturas de animales cargadas", texturas_animales.len());
+
+    // ═══════════════════════════════════════════════════════════════
     //  ✅ AUDIO - Fallback de ambiente
     // ═══════════════════════════════════════════════════════════════
     let mut audio = AudioManager::new();
@@ -222,7 +339,6 @@ async fn main() {
 
     // ═══════════════════════════════════════════════════════════════
     //  ✅ GRITOS POR CATEGORÍA (8 archivos WAV)
-    //  Ubicación: assets/audio/categorias/*.wav
     // ═══════════════════════════════════════════════════════════════
     audio.agregar_efecto(
         "grito_anfibios",
@@ -275,7 +391,7 @@ async fn main() {
     println!("✅ 8 gritos de categoría cargados");
 
     // ═══════════════════════════════════════════════════════════════
-    //  ✅ AMBIENTES POR ESCENA (usando fallback por ahora)
+    //  ✅ AMBIENTES POR ESCENA
     // ═══════════════════════════════════════════════════════════════
     for escena in escena::Escena::TODAS {
         audio.agregar_ambiente(
@@ -286,8 +402,7 @@ async fn main() {
     println!("✅ {} ambientes de escena cargados", escena::Escena::TODAS.len());
 
     // ═══════════════════════════════════════════════════════════════
-    //  ✅ TEXTURAS DE GUÍAS (Pixel Art)
-    //  Ubicación: assets/guias_pixel/*_pixel.png
+    //  ✅ TEXTURAS DE GUÍAS
     // ═══════════════════════════════════════════════════════════════
     let textura_eli = {
         let bytes = include_bytes!("../assets/guias/guiaEli.png");
@@ -310,8 +425,16 @@ async fn main() {
     // ═══════════════════════════════════════════════════════════════
     let iconos_count = iconos_categoria.len();
     let fondos_count = fondos_categoria.len();
+    let animales_count = texturas_animales.len();
 
-    let ui = UiRenderer::new(font, textura_eli, textura_ani, iconos_categoria, fondos_categoria);
+    let ui = UiRenderer::new(
+        font,
+        textura_eli,
+        textura_ani,
+        iconos_categoria,
+        fondos_categoria,
+        texturas_animales,
+    );
     let mut estado = Estado::new(&db);
     estado.duracion_transicion = (audio.duracion_transicion() + 0.2)
         .max(config::TRANSITION_MIN);
@@ -319,13 +442,14 @@ async fn main() {
 
     println!("");
     println!("🎮 ═══════════════════════════════════════════════════════");
-    println!("🎮   Zoo Pixel v0.6.2 - Fauna Venezolana Interactiva");
+    println!("🎮   Zoo Pixel v0.7.0 - Fauna Venezolana Interactiva");
     println!("🎮 ═══════════════════════════════════════════════════════");
     println!("📍 Escena inicial: {:?}", estado.escena);
     println!("📐 Resolución: {}x{}", screen_width(), screen_height());
     println!("🎨 Fondos: {} frames en spritesheet", fondos.total_frames());
     println!("🖼️  Íconos: {} categorías", iconos_count);
     println!("🌄 Fondos cat: {} categorías", fondos_count);
+    println!("🦎 Animales: {} texturas", animales_count);
     println!("🔊 Audio: 8 gritos + {} ambientes", escena::Escena::TODAS.len());
     println!("🎮 ═══════════════════════════════════════════════════════");
     println!("");
@@ -362,7 +486,7 @@ async fn main() {
             audio.transicionar_a(destino);
         }
 
-        // ── Gritos de categoría (resetear flag después de reproducir) ─
+        // ── Gritos de categoría ──────────────────────────────────────
         if estado.necesita_sonido_animal {
             let categoria = match &estado.modo {
                 estado::ModoVista::ViendoAnimal { animal, .. } => {

@@ -15,6 +15,7 @@ pub struct UiRenderer {
     textura_ani: Option<Texture2D>,
     iconos_categoria: HashMap<String, Texture2D>,
     fondos_categoria: HashMap<String, Texture2D>,
+    texturas_animales: HashMap<String, Texture2D>,
     grito_reproducido: Cell<bool>,
 }
 
@@ -25,6 +26,7 @@ impl UiRenderer {
         textura_ani: Option<Texture2D>,
         iconos_categoria: HashMap<String, Texture2D>,
         fondos_categoria: HashMap<String, Texture2D>,
+        texturas_animales: HashMap<String, Texture2D>,
     ) -> Self {
         Self {
             font,
@@ -33,6 +35,7 @@ impl UiRenderer {
             textura_ani,
             iconos_categoria,
             fondos_categoria,
+            texturas_animales,
             grito_reproducido: Cell::new(false),
         }
     }
@@ -57,221 +60,245 @@ impl UiRenderer {
         }
     }
 
+    fn get_textura_animal(&self, nombre_cientifico: &str) -> Option<&Texture2D> {
+        let clave = nombre_cientifico.to_lowercase();
+        self.texturas_animales.get(&clave)
+    }
+
     // ═════════════════════════════════════════════════════════════════
     //  PANTALLA DE INFO UNIFICADA (animales, fósiles, peces, mensajes)
     // ═════════════════════════════════════════════════════════════════
- fn render_info_animal(
-    &self,
-    info: &AnimalInfo,
-    top: f32,
-    bottom: f32,
-    audio: &AudioManager,
-) {
-    let sw = screen_width();
+    fn render_info_animal(
+        &self,
+        info: &AnimalInfo,
+        top: f32,
+        bottom: f32,
+        audio: &AudioManager,
+    ) {
+        let sw = screen_width();
 
-    // ── LIMPIAR el área completa primero ────────────────────────────
-    draw_rectangle(0.0, top, sw, bottom - top, COLOR_BG_DARK);
+        // ── LIMPIAR el área completa primero ──────────────────────────
+        draw_rectangle(0.0, top, sw, bottom - top, COLOR_BG_DARK);
 
-    // ── FONDO DE CATEGORÍA ──────────────────────────────────────────
-    if !info.categoria.is_empty() {
-        let cat_key = info.categoria.to_lowercase();
-        if let Some(fondo_tex) = self.fondos_categoria.get(&cat_key) {
+        // ── FONDO DE CATEGORÍA ────────────────────────────────────────
+        if !info.categoria.is_empty() {
+            let cat_key = info.categoria.to_lowercase();
+            if let Some(fondo_tex) = self.fondos_categoria.get(&cat_key) {
+                draw_texture_ex(
+                    fondo_tex,
+                    0.0,
+                    top,
+                    WHITE,
+                    DrawTextureParams {
+                        dest_size: Some(vec2(sw, bottom - top)),
+                        ..Default::default()
+                    },
+                );
+            }
+        }
+
+        // ── Overlay oscuro ────────────────────────────────────────────
+        draw_rectangle(0.0, top, sw, bottom - top, Color::new(0.0, 0.0, 0.0, 0.65));
+
+        let available_h = bottom - top;
+
+        // ── Área de imagen ────────────────────────────────────────────
+        let img_h = available_h * 0.18;
+        let img_w = sw * 0.45;
+        let img_x = (sw - img_w) / 2.0;
+        let img_y = top + available_h * 0.04;
+
+        if let Some(tex) = self.get_textura_animal(&info.nombre_cientifico) {
+            // Mantener proporción dentro del área
+            let tex_w = tex.width();
+            let tex_h = tex.height();
+            let scale_x = img_w / tex_w;
+            let scale_y = img_h / tex_h;
+            let scale = scale_x.min(scale_y);
+            let dst_w = tex_w * scale;
+            let dst_h = tex_h * scale;
+            let dst_x = img_x + (img_w - dst_w) / 2.0;
+            let dst_y = img_y + (img_h - dst_h) / 2.0;
+
+            // Fondo del área
+            draw_rectangle(img_x, img_y, img_w, img_h, COLOR_BG_ALT);
+            draw_rectangle_lines(img_x, img_y, img_w, img_h, 2.0, COLOR_BORDER);
+
             draw_texture_ex(
-                fondo_tex,
-                0.0,
-                top,
+                tex,
+                dst_x,
+                dst_y,
                 WHITE,
                 DrawTextureParams {
-                    dest_size: Some(vec2(sw, bottom - top)),
+                    dest_size: Some(vec2(dst_w, dst_h)),
+                    ..Default::default()
+                },
+            );
+        } else {
+            // Placeholder si no hay textura
+            draw_rectangle(img_x, img_y, img_w, img_h, COLOR_BG_ALT);
+            draw_rectangle_lines(img_x, img_y, img_w, img_h, 2.0, COLOR_BORDER);
+            let ph = "[ Imagen ]";
+            let fs_ph = fs_pct(0.02);
+            let phw = measure_text(ph, Some(&self.font), fs_ph, 1.0).width;
+            draw_text_ex(
+                ph,
+                img_x + (img_w - phw) / 2.0,
+                img_y + img_h * 0.55,
+                TextParams {
+                    font: Some(&self.font),
+                    font_size: fs_ph,
+                    color: COLOR_DIM,
                     ..Default::default()
                 },
             );
         }
-    }
 
-    // ── Overlay oscuro ───────────────────────────────────────────────
-    draw_rectangle(0.0, top, sw, bottom - top, Color::new(0.0, 0.0, 0.0, 0.65));
+        // ── Nombre común ──────────────────────────────────────────────
+        let name_y = img_y + img_h + available_h * 0.04;
+        let fs_name = fs_adaptativo(&info.nombre_comun, &self.font, fs_pct(0.045), sw * 0.85);
+        let ntw = measure_text(&info.nombre_comun, Some(&self.font), fs_name, 1.0).width;
+        let th_name = text_height(&self.font, fs_name);
+        draw_text_ex(
+            &info.nombre_comun,
+            (sw - ntw) / 2.0,
+            name_y + th_name,
+            TextParams {
+                font: Some(&self.font),
+                font_size: fs_name,
+                color: COLOR_ACCENT,
+                ..Default::default()
+            },
+        );
 
-    let available_h = bottom - top;
+        // ── Nombre científico ─────────────────────────────────────────
+        let sci_y = name_y + th_name + 4.0;
+        let fs_sci = fs_adaptativo(
+            &info.nombre_cientifico,
+            &self.font,
+            fs_pct(0.025),
+            sw * 0.8,
+        );
+        let stw = measure_text(&info.nombre_cientifico, Some(&self.font), fs_sci, 1.0).width;
+        let th_sci = text_height(&self.font, fs_sci);
+        draw_text_ex(
+            &info.nombre_cientifico,
+            (sw - stw) / 2.0,
+            sci_y + th_sci,
+            TextParams {
+                font: Some(&self.font),
+                font_size: fs_sci,
+                color: COLOR_TEXT_DIM,
+                ..Default::default()
+            },
+        );
 
-    // ── Área de imagen ───────────────────────────────────────────────
-    let img_h = available_h * 0.18;
-    let img_w = sw * 0.45;
-    let img_x = (sw - img_w) / 2.0;
-    let img_y = top + available_h * 0.04;
+        // ── Separador ─────────────────────────────────────────────────
+        let sep_y = sci_y + th_sci + 12.0;
+        draw_line(sw * 0.1, sep_y, sw * 0.9, sep_y, 1.0, COLOR_BORDER);
 
-    draw_rectangle(img_x, img_y, img_w, img_h, COLOR_BG_ALT);
-    draw_rectangle_lines(img_x, img_y, img_w, img_h, 2.0, COLOR_BORDER);
+        // ── Calcular reserva inferior para ícono + etiqueta + hint ────
+        let fs_cat = fs_pct(0.018);
+        let th_cat = text_height(&self.font, fs_cat);
+        let hint_reserve = 38.0;
+        let gap_hint = 8.0;
 
-    let ph = "[ Imagen ]";
-    let fs_ph = fs_pct(0.02);
-    let phw = measure_text(ph, Some(&self.font), fs_ph, 1.0).width;
-    draw_text_ex(
-        ph,
-        img_x + (img_w - phw) / 2.0,
-        img_y + img_h * 0.55,
-        TextParams {
-            font: Some(&self.font),
-            font_size: fs_ph,
-            color: COLOR_DIM,
-            ..Default::default()
-        },
-    );
-
-    // ── Nombre común ─────────────────────────────────────────────────
-    let name_y = img_y + img_h + available_h * 0.04;
-    let fs_name = fs_adaptativo(&info.nombre_comun, &self.font, fs_pct(0.045), sw * 0.85);
-    let ntw = measure_text(&info.nombre_comun, Some(&self.font), fs_name, 1.0).width;
-    let th_name = text_height(&self.font, fs_name);
-    draw_text_ex(
-        &info.nombre_comun,
-        (sw - ntw) / 2.0,
-        name_y + th_name,
-        TextParams {
-            font: Some(&self.font),
-            font_size: fs_name,
-            color: COLOR_ACCENT,
-            ..Default::default()
-        },
-    );
-
-    // ── Nombre científico ────────────────────────────────────────────
-    let sci_y = name_y + th_name + 4.0;
-    let fs_sci = fs_adaptativo(
-        &info.nombre_cientifico,
-        &self.font,
-        fs_pct(0.025),
-        sw * 0.8,
-    );
-    let stw = measure_text(&info.nombre_cientifico, Some(&self.font), fs_sci, 1.0).width;
-    let th_sci = text_height(&self.font, fs_sci);
-    draw_text_ex(
-        &info.nombre_cientifico,
-        (sw - stw) / 2.0,
-        sci_y + th_sci,
-        TextParams {
-            font: Some(&self.font),
-            font_size: fs_sci,
-            color: COLOR_TEXT_DIM,
-            ..Default::default()
-        },
-    );
-
-    // ── Separador (ahora va justo después del nombre científico) ─────
-    let sep_y = sci_y + th_sci + 12.0;
-    draw_line(sw * 0.1, sep_y, sw * 0.9, sep_y, 1.0, COLOR_BORDER);
-
-    // ── Calcular reserva inferior para ícono + etiqueta + hint ───────
-    // hint ocupa ~30px, etiqueta ~fs_cat px, ícono scaled_h px, gaps
-    let fs_cat = fs_pct(0.018);
-    let th_cat = text_height(&self.font, fs_cat);
-    let hint_reserve = 38.0; // espacio del hint desde bottom
-    let gap_hint = 8.0;      // separación entre etiqueta y hint
-
-    // Calculamos el tamaño del ícono (si existe) para reservar espacio
-    let icono_reserve = if !info.categoria.is_empty() {
-        let cat_key = info.categoria.to_lowercase();
-        if let Some(icono_tex) = self.iconos_categoria.get(&cat_key) {
-            let icon_scale = 0.5;
-            icono_tex.height() * icon_scale + th_cat + gap_hint + 6.0
+        let icono_reserve = if !info.categoria.is_empty() {
+            let cat_key = info.categoria.to_lowercase();
+            if let Some(icono_tex) = self.iconos_categoria.get(&cat_key) {
+                let icon_scale = 0.5;
+                icono_tex.height() * icon_scale + th_cat + gap_hint + 6.0
+            } else {
+                th_cat + gap_hint
+            }
         } else {
             0.0
+        };
+
+        let desc_bottom = bottom - hint_reserve - icono_reserve;
+
+        // ── Descripción (con typewriter) ──────────────────────────────
+        let fs_desc = fs_pct(0.026);
+        let desc_text: String = info.descripcion.chars().take(info.texto_pos).collect();
+        self.render_texto_wrapped(
+            &desc_text,
+            sw * 0.08,
+            sep_y + 12.0,
+            sw * 0.84,
+            desc_bottom,
+            fs_desc,
+            COLOR_INFO_TEXT,
+        );
+
+        // ── ÍCONO DE CATEGORÍA (anclado desde abajo, encima del hint) ─
+        if !info.categoria.is_empty() {
+            let cat_key = info.categoria.to_lowercase();
+            let label_y = bottom - hint_reserve - gap_hint;
+
+            if let Some(icono_tex) = self.iconos_categoria.get(&cat_key) {
+                let icon_scale = 0.5;
+                let scaled_w = icono_tex.width() * icon_scale;
+                let scaled_h = icono_tex.height() * icon_scale;
+                let icon_y = label_y - scaled_h - 4.0;
+                let icon_x = (sw - scaled_w) / 2.0;
+
+                draw_texture_ex(
+                    icono_tex,
+                    icon_x,
+                    icon_y,
+                    WHITE,
+                    DrawTextureParams {
+                        dest_size: Some(vec2(scaled_w, scaled_h)),
+                        ..Default::default()
+                    },
+                );
+
+                let cat_label = info.categoria.to_uppercase();
+                let clw = measure_text(&cat_label, Some(&self.font), fs_cat, 1.0).width;
+                draw_text_ex(
+                    &cat_label,
+                    (sw - clw) / 2.0,
+                    label_y,
+                    TextParams {
+                        font: Some(&self.font),
+                        font_size: fs_cat,
+                        color: COLOR_HIGHLIGHT,
+                        ..Default::default()
+                    },
+                );
+            } else {
+                let cat_label = info.categoria.to_uppercase();
+                let clw = measure_text(&cat_label, Some(&self.font), fs_cat, 1.0).width;
+                draw_text_ex(
+                    &cat_label,
+                    (sw - clw) / 2.0,
+                    label_y,
+                    TextParams {
+                        font: Some(&self.font),
+                        font_size: fs_cat,
+                        color: COLOR_HIGHLIGHT,
+                        ..Default::default()
+                    },
+                );
+            }
         }
-    } else {
-        0.0
-    };
 
-    let desc_bottom = bottom - hint_reserve - icono_reserve;
-
-    // ── Descripción (con typewriter) ──────────────────────────────────
-    let fs_desc = fs_pct(0.026);
-    let desc_text: String = info.descripcion.chars().take(info.texto_pos).collect();
-    self.render_texto_wrapped(
-        &desc_text,
-        sw * 0.08,
-        sep_y + 12.0,
-        sw * 0.84,
-        desc_bottom,
-        fs_desc,
-        COLOR_INFO_TEXT,
-    );
-
-    // ── ÍCONO DE CATEGORÍA (anclado desde abajo, encima del hint) ────
-    if !info.categoria.is_empty() {
-        let cat_key = info.categoria.to_lowercase();
-
-        // Posición base: justo encima del hint
-        // etiqueta va justo encima del hint_reserve
-        let label_y = bottom - hint_reserve - gap_hint;
-
-        if let Some(icono_tex) = self.iconos_categoria.get(&cat_key) {
-            let icon_scale = 0.5;
-            let scaled_w = icono_tex.width() * icon_scale;
-            let scaled_h = icono_tex.height() * icon_scale;
-
-            // El ícono va encima de la etiqueta
-            let icon_y = label_y - scaled_h - 4.0;
-            let icon_x = (sw - scaled_w) / 2.0;
-
-            draw_texture_ex(
-                icono_tex,
-                icon_x,
-                icon_y,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(vec2(scaled_w, scaled_h)),
-                    ..Default::default()
-                },
-            );
-
-            // Etiqueta debajo del ícono
-            let cat_label = info.categoria.to_uppercase();
-            let clw = measure_text(&cat_label, Some(&self.font), fs_cat, 1.0).width;
-            draw_text_ex(
-                &cat_label,
-                (sw - clw) / 2.0,
-                label_y,
-                TextParams {
-                    font: Some(&self.font),
-                    font_size: fs_cat,
-                    color: COLOR_HIGHLIGHT,
-                    ..Default::default()
-                },
-            );
+        // ── Hint ──────────────────────────────────────────────────────
+        let hint = if !info.hint_z.is_empty() {
+            if info.terminado {
+                format!("{}  X: Volver", info.hint_z)
+            } else {
+                "Z: Completar  X: Volver".to_string()
+            }
         } else {
-            // Sin ícono: solo la etiqueta
-            let cat_label = info.categoria.to_uppercase();
-            let clw = measure_text(&cat_label, Some(&self.font), fs_cat, 1.0).width;
-            draw_text_ex(
-                &cat_label,
-                (sw - clw) / 2.0,
-                label_y,
-                TextParams {
-                    font: Some(&self.font),
-                    font_size: fs_cat,
-                    color: COLOR_HIGHLIGHT,
-                    ..Default::default()
-                },
-            );
-        }
+            if info.terminado {
+                "X: Volver".to_string()
+            } else {
+                "Z: Completar  X: Volver".to_string()
+            }
+        };
+        self.render_hint(&hint, bottom - 10.0);
     }
-
-    // ── Hint ─────────────────────────────────────────────────────────
-    let hint = if !info.hint_z.is_empty() {
-        if info.terminado {
-            format!("{}  X: Volver", info.hint_z)
-        } else {
-            "Z: Completar  X: Volver".to_string()
-        }
-    } else {
-        if info.terminado {
-            "X: Volver".to_string()
-        } else {
-            "Z: Completar  X: Volver".to_string()
-        }
-    };
-    self.render_hint(&hint, bottom - 10.0);
-}
 
     // ═════════════════════════════════════════════════════════════════
     //  DIÁLOGO
@@ -290,8 +317,8 @@ impl UiRenderer {
         draw_rectangle_lines(box_x, box_y, box_w, box_h, 2.0, COLOR_BORDER);
 
         if let Some(tex) = self.get_textura_guia(estado.dialogo.personaje_actual()) {
-            let max_w = sw * 0.60;
-            let max_h = sh * 0.45;
+            let max_w = sw * 0.40;
+            let max_h = sh * 0.38;
             let tex_aspect = tex.width() / tex.height();
             let area_aspect = max_w / max_h;
 
